@@ -1,0 +1,67 @@
+
+package bingol.campus.student.repository;
+
+import bingol.campus.student.entity.Student;
+import bingol.campus.student.entity.enums.Department;
+import bingol.campus.student.entity.enums.Faculty;
+import bingol.campus.student.entity.enums.Grade;
+import bingol.campus.student.exceptions.StudentNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.data.domain.Pageable;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+public interface StudentRepository extends JpaRepository<Student, Long> {
+
+    // Kullanıcı numarasına göre öğrenci bulma
+    default Student getByUserNumber(String username) throws StudentNotFoundException {
+        return findByUserNumber(username)
+                .orElseThrow(StudentNotFoundException::new);
+    }
+
+    // Kullanıcı numarasına göre öğrenci bulma (Optional döndüren metot)
+    Optional<Student> findByUserNumber(String username);
+
+    // Telefon numarasına göre varlık kontrolü
+    boolean existsByMobilePhone(String mobilePhone);
+
+    // E-posta adresine göre varlık kontrolü
+    boolean existsByEmail(String email);
+
+    // Kullanıcı numarasına göre varlık kontrolü
+    boolean existsByUserNumber(String schoolNumber);
+
+
+    // Öğrencinin aktiflik durumunu güncelleyen sorgu
+    @Modifying
+    @Transactional
+    @Query("UPDATE Student s SET s.isActive = :isActive WHERE s.id = :studentId")
+    int updateStudentStatus(@Param("studentId") Long studentId, @Param("isActive") Boolean isActive);
+
+    @Query(value = "SELECT s FROM Student s WHERE " +
+            "(LOWER(s.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(s.lastName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(s.username) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+            "AND (COALESCE(:excludedUserIds, NULL) IS NULL OR s.id NOT IN :excludedUserIds)")
+    List<Student> searchStudents(
+            @Param("query") String query,
+            @Param("excludedUserIds") Set<Long> excludedUserIds,
+            Pageable pageable);
+
+
+    @Query("SELECT s FROM Student s WHERE s.department = :department")
+    Page<Student> findStudentsByDepartment(@Param("department") Department department, Pageable pageable);
+    @Query("SELECT s FROM Student s WHERE s.faculty = :faculty")
+    Page<Student> findStudentsByFaculty(@Param("faculty") Faculty faculty, Pageable pageable);
+    @Query("SELECT s FROM Student s WHERE s.grade = :grade")
+    Page<Student> findStudentsByGrade(@Param("grade") Grade grade, Pageable pageable);
+
+
+}
