@@ -2,9 +2,7 @@ package bingol.campus.student.entity;
 
 
 import bingol.campus.blockRelation.entity.BlockRelation;
-import bingol.campus.chat.entity.ChatMedia;
-import bingol.campus.chat.entity.ChatParticipant;
-import bingol.campus.chat.entity.Message;
+
 import bingol.campus.comment.entity.Comment;
 import bingol.campus.followRelation.entity.FollowRelation;
 import bingol.campus.friendRequest.entity.FriendRequest;
@@ -103,7 +101,7 @@ public class Student extends User {
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Comment> comments = new ArrayList<>();
-
+/*
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<ChatParticipant> chatParticipants = new ArrayList<>(); // Kullanıcının katıldığı sohbetler
@@ -114,9 +112,9 @@ public class Student extends User {
 
     @OneToMany(mappedBy = "uploadedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ChatMedia> mediaFiles = new ArrayList<>(); // Kullanıcının gönderdiği medya dosyaları
-    public List<Story> getFeaturedStories() {
-        return stories.stream().filter(Story::isFeatured).toList();
-    }
+
+ */
+
 
 
 }

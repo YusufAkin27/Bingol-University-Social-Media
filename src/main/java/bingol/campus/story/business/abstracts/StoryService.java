@@ -7,6 +7,7 @@ import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.story.core.exceptions.StoryNotActiveException;
 import bingol.campus.story.core.exceptions.*;
+import bingol.campus.story.core.response.FeatureStoryDTO;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.story.core.response.StoryDetails;
 import bingol.campus.student.core.response.SearchAccountDTO;
@@ -14,6 +15,7 @@ import bingol.campus.student.exceptions.StudentNotFoundException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.util.List;
 
@@ -24,7 +26,6 @@ public interface StoryService {
 
 
     ResponseMessage featureStory(String username, Long storyId,Long featuredStoryId) throws StudentNotFoundException, StoryNotFoundException, OwnerStoryException, AlreadyFeaturedStoriesException, FeaturedStoryGroupNotFoundException;
-
 
 
     ResponseMessage extendStoryDuration(String username, Long storyId, int hours) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException, InvalidHourRangeException, FeaturedStoryModificationException;
@@ -50,4 +51,13 @@ public interface StoryService {
 
 
     DataResponseMessage<StoryDetails> getStoryDetails(String username, Long storyId, Pageable pageable) throws StudentNotFoundException, StoryNotFoundException, OwnerStoryException;
+
+    ResponseMessage featureUpdate(String username, Long featureId, String title, MultipartFile coverPhoto) throws StudentNotFoundException, FeaturedStoryGroupNotFoundException, FeaturedStoryGroupNotAccess, IOException;
+
+    DataResponseMessage<FeatureStoryDTO> getFeatureId(String username, Long featureId) throws StudentNotFoundException, FeaturedStoryGroupNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException;
+
+    DataResponseMessage<List<FeatureStoryDTO>> getFeaturedStoriesByStudent(String username, Long studentId) throws StudentNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException;
+
+    DataResponseMessage<List<FeatureStoryDTO>> getMyFeaturedStories(String username) throws StudentNotFoundException;
+
 }

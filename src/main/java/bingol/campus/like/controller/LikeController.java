@@ -13,6 +13,7 @@ import bingol.campus.response.ResponseMessage;
 import bingol.campus.story.core.exceptions.NotFollowingException;
 import bingol.campus.story.core.exceptions.StoryNotActiveException;
 import bingol.campus.story.core.exceptions.StoryNotFoundException;
+import bingol.campus.story.core.exceptions.StudentProfilePrivateException;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.student.core.response.SearchAccountDTO;
 import bingol.campus.student.exceptions.StudentNotFoundException;
@@ -32,13 +33,13 @@ public class LikeController {
 
     // Hikayeyi beğenme
     @PostMapping("/story/{storyId}")
-    public ResponseMessage likeStory(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long storyId) throws NotFollowingException, StoryNotActiveException, BlockingBetweenStudent, StoryNotFoundException, StudentNotFoundException, AlreadyLikedException {
+    public ResponseMessage likeStory(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long storyId) throws NotFollowingException, StoryNotActiveException, BlockingBetweenStudent, StoryNotFoundException, StudentNotFoundException, AlreadyLikedException, StudentProfilePrivateException {
         return likeService.likeStory(userDetails.getUsername(), storyId);
     }
 
     // Gönderiyi beğenme
     @PostMapping("/post/{postId}")
-    public ResponseMessage likePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException, AlreadyLikedException {
+    public ResponseMessage likePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException, AlreadyLikedException, StudentProfilePrivateException {
         return likeService.likePost(userDetails.getUsername(), postId);
     }
 
@@ -71,13 +72,13 @@ public class LikeController {
     }
     // Belirtilen hikayede belirli bir kullanıcının beğenisini arama
     @GetMapping("/story/{storyId}/search/{username}")
-    public DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long storyId, @PathVariable String username) throws NotFollowingException, StoryNotFoundException, StudentNotFoundException {
+    public DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long storyId, @PathVariable String username) throws NotFollowingException, StoryNotFoundException, StudentNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
         return likeService.searchUserInStoryLikes(userDetails.getUsername(),storyId, username);
     }
 
     // Belirtilen gönderide belirli bir kullanıcının beğenisini arama
     @GetMapping("/post/{postId}/search/{username}")
-    public DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long postId, @PathVariable String username) throws NotFollowingException, PostNotFoundException, StudentNotFoundException {
+    public DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long postId, @PathVariable String username) throws NotFollowingException, PostNotFoundException, StudentNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
         return likeService.searchUserInPostLikes(userDetails.getUsername(),postId, username);
     }
 

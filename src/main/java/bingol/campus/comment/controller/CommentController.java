@@ -14,6 +14,7 @@ import bingol.campus.response.ResponseMessage;
 import bingol.campus.story.core.exceptions.NotFollowingException;
 import bingol.campus.story.core.exceptions.StoryNotActiveException;
 import bingol.campus.story.core.exceptions.StoryNotFoundException;
+import bingol.campus.story.core.exceptions.StudentProfilePrivateException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -34,7 +35,7 @@ public class CommentController {
     @PostMapping("/story/{storyId}")
     public ResponseMessage addCommentToStory(@AuthenticationPrincipal UserDetails userDetails,
                                              @PathVariable Long storyId,
-                                             @RequestParam String content) throws NotFollowingException, StoryNotActiveException, BlockingBetweenStudent, StoryNotFoundException, StudentNotFoundException {
+                                             @RequestParam String content) throws NotFollowingException, StoryNotActiveException, BlockingBetweenStudent, StoryNotFoundException, StudentNotFoundException, StudentProfilePrivateException {
         return commentService.addCommentToStory(userDetails.getUsername(), storyId, content);
     }
 
@@ -42,7 +43,7 @@ public class CommentController {
     @PostMapping("/post/{postId}")
     public ResponseMessage addCommentToPost(@AuthenticationPrincipal UserDetails userDetails,
                                             @PathVariable Long postId,
-                                            @RequestParam String content) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException {
+                                            @RequestParam String content) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException, StudentProfilePrivateException {
         return commentService.addCommentToPost(userDetails.getUsername(), postId, content);
     }
 
@@ -65,7 +66,7 @@ public class CommentController {
     // Belirli bir hikayedeki yorumları sayfalı olarak listeleme
     @GetMapping("/story/{storyId}")
     public DataResponseMessage<List<CommentDTO>> getStoryComments(@AuthenticationPrincipal UserDetails userDetails,
-                                                                  @PathVariable Long storyId, Pageable pageable) throws NotFollowingException, BlockingBetweenStudent, StoryNotActiveException, StoryNotFoundException, StudentNotFoundException {
+                                                                  @PathVariable Long storyId, Pageable pageable) throws NotFollowingException, BlockingBetweenStudent, StoryNotActiveException, StoryNotFoundException, StudentNotFoundException, StudentProfilePrivateException {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return commentService.getStoryComments(userDetails.getUsername(), storyId, pageRequest);
     }
@@ -73,7 +74,7 @@ public class CommentController {
     // Belirli bir gönderideki yorumları sayfalı olarak listeleme
     @GetMapping("/post/{postId}")
     public DataResponseMessage<List<CommentDTO>> getPostComments(@AuthenticationPrincipal UserDetails userDetails,
-                                                                 @PathVariable Long postId, Pageable pageable) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException {
+                                                                 @PathVariable Long postId, Pageable pageable) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException, StudentProfilePrivateException {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return commentService.getPostComments(userDetails.getUsername(), postId, pageRequest);
     }

@@ -20,6 +20,7 @@ import bingol.campus.security.repository.UserRepository;
 import bingol.campus.story.core.converter.StoryConverter;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.story.entity.Story;
+import bingol.campus.story.entity.StoryViewer;
 import bingol.campus.story.repository.StoryRepository;
 import bingol.campus.story.repository.StoryViewerRepository;
 import bingol.campus.student.business.abstracts.StudentService;
@@ -486,7 +487,7 @@ public class StudentManager implements StudentService {
         excludedUserIds.add(student.getId()); // Kendisi de hariç tutulur
 
         // Sayfalama nesnesi oluştur
-        int pageSize = 20;
+        int pageSize = 10;
         Pageable pageable = PageRequest.of(page, pageSize);
 
         // Kullanıcıları repository üzerinden sorgula
@@ -729,7 +730,6 @@ public class StudentManager implements StudentService {
     }
 
 
-
     @Override
     public DataResponseMessage<List<StoryDTO>> getHomeStories(String username, int page) throws StudentNotFoundException {
         // Kullanıcıyı bul
@@ -751,13 +751,14 @@ public class StudentManager implements StudentService {
         Page<Story> storyPage = storyRepository.findByStudentInAndIsActiveTrueOrderByCreatedAtDesc(followingList, pageable);
 
         // Kullanıcının daha önce görüntülediği hikayeleri al
-        List<Long> viewedStoryIds = storyViewerRepository.findViewedStoryIdsByStudent(student);
+        List<StoryViewer> storyViewers = storyViewerRepository.findViewedStoryIdsByStudent(student);
+        List<Long> ids = storyViewers.stream().map(StoryViewer::getId).toList();
 
         // **Sadece aktif olan hikayeleri al ve sıralama yap**
         List<Story> sortedStories = storyPage.getContent().stream()
                 .filter(Story::isActive) // 🔥 SADECE AKTİF OLANLARI AL
                 .sorted(Comparator
-                        .comparing((Story s) -> viewedStoryIds.contains(s.getId())) // Görüntülenenleri en sona at
+                        .comparing((Story s) -> ids.contains(s.getId())) // Görüntülenenleri en sona at
                         .thenComparing(Story::getCreatedAt, Comparator.reverseOrder()) // Yeni hikayeler önce gelsin
                 )
                 .toList();
@@ -770,6 +771,14 @@ public class StudentManager implements StudentService {
         return new DataResponseMessage<>("Ana sayfa hikayeleri başarıyla getirildi.", true, storyDTOs);
     }
 
+    @Override
+    @Transactional
+    public ResponseMessage updateFcmToken(String username, String fcmToken) throws StudentNotFoundException {
+        Student student = findBySchoolNumber(username);
+        student.setFcmToken(fcmToken);
+        studentRepository.save(student);
+        return new ResponseMessage("başarılı", true);
+    }
 
 
 }

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class StoryDTO {
     private long storyId;
+    private String profilePhoto;
     private String username;
     private String photo;
     private int score;

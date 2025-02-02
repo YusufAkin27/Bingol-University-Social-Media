@@ -78,4 +78,6 @@ public interface StudentService {
     DataResponseMessage<List<PostDTO>> getHomePosts(String username, int page) throws StudentNotFoundException;
 
     DataResponseMessage<List<StoryDTO>> getHomeStories(String username, int page) throws StudentNotFoundException;
+
+    ResponseMessage updateFcmToken(String username, String fcmToken) throws StudentNotFoundException;
 }

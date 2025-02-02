@@ -8,7 +8,6 @@ import bingol.campus.like.core.exceptions.StoryNotFoundLikeException;
 import bingol.campus.like.entity.Like;
 import bingol.campus.like.repository.LikeRepository;
 import bingol.campus.notification.NotificationController;
-import bingol.campus.notification.SendBulkNotificationRequest;
 import bingol.campus.notification.SendNotificationRequest;
 import bingol.campus.post.core.converter.PostConverter;
 import bingol.campus.post.core.exceptions.PostNotFoundException;
@@ -22,6 +21,7 @@ import bingol.campus.story.core.converter.StoryConverter;
 import bingol.campus.story.core.exceptions.NotFollowingException;
 import bingol.campus.story.core.exceptions.StoryNotActiveException;
 import bingol.campus.story.core.exceptions.StoryNotFoundException;
+import bingol.campus.story.core.exceptions.StudentProfilePrivateException;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.story.entity.Story;
 import bingol.campus.story.repository.StoryRepository;
@@ -39,7 +39,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +54,7 @@ public class LikeServiceManager implements LikeService {
 
     @Override
     @Transactional
-    public ResponseMessage likeStory(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException {
+    public ResponseMessage likeStory(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username);
 
         // Hikaye bilgisi alınıyor
@@ -69,24 +68,8 @@ public class LikeServiceManager implements LikeService {
         // Hikayeyi paylaştığı öğrenci (student1) bilgisi
         Student student1 = story.getStudent();
 
-        // Engellemeleri kontrol et (student1 tarafından engellenmiş mi ve vice versa)
-        boolean isBlockedByStudent1 = student1.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student));  // student1 tarafından engellenmiş mi?
-        boolean isBlockedByStudent = student.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student1));  // student tarafından engellenmiş mi?
+        hasAccessToContent(student,student1);
 
-        if (isBlockedByStudent1 || isBlockedByStudent) {
-            throw new BlockingBetweenStudent();  // Eğer engellenmişse, engellenmiş hatası fırlatılır
-        }
-
-        // Takip durumu kontrolü
-        boolean isFollowing = student.getFollowing().stream()
-                .anyMatch(followRelation -> followRelation.getFollower().equals(student1));  // student1 takip ediliyor mu?
-
-        if (student1.isPrivate() && !isFollowing) {  // Profil gizli ve takip edilmiyorsa, erişim reddedilir
-            throw new NotFollowingException();
-        }
-        // Beğeniyi kontrol et: Eğer kullanıcı bu hikayeyi zaten beğenmişse, hata fırlatılır
         boolean alreadyLiked = story.getLikes().stream()
                 .anyMatch(like -> like.getStudent().equals(student));  // Kullanıcı daha önce beğendi mi?
 
@@ -126,7 +109,7 @@ public class LikeServiceManager implements LikeService {
     }
 
     @Override
-    public ResponseMessage likePost(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException {
+    public ResponseMessage likePost(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username);
 
         Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
@@ -137,21 +120,7 @@ public class LikeServiceManager implements LikeService {
 
         Student student1 = post.getStudent();
 
-        boolean isBlockedByStudent1 = student1.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student));  // student1 tarafından engellenmiş mi?
-        boolean isBlockedByStudent = student.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student1));  // student tarafından engellenmiş mi?
-
-        if (isBlockedByStudent1 || isBlockedByStudent) {
-            throw new BlockingBetweenStudent();
-        }
-
-        boolean isFollowing = student.getFollowing().stream()
-                .anyMatch(followRelation -> followRelation.getFollower().equals(student1));  // student1 takip ediliyor mu?
-
-        if (student1.isPrivate() && !isFollowing) {  // Profil gizli ve takip edilmiyorsa, erişim reddedilir
-            throw new NotFollowingException();
-        }
+        hasAccessToContent(student,student1);
         boolean alreadyLiked = post.getLikes().stream()
                 .anyMatch(like -> like.getStudent().equals(student));  // Kullanıcı daha önce beğendi mi?
 
@@ -321,7 +290,7 @@ public class LikeServiceManager implements LikeService {
 
     @Override
     public DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(String username, Long postId, String targetUsername)
-            throws PostNotFoundException, StudentNotFoundException, NotFollowingException {
+            throws PostNotFoundException, StudentNotFoundException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
 
         // Gönderiyi bul
         Post post = postRepository.findById(postId)
@@ -332,9 +301,8 @@ public class LikeServiceManager implements LikeService {
         Student requester = studentRepository.getByUserNumber(username);
 
         // Kullanıcının gönderiye erişimi olup olmadığını kontrol et
-        if (!hasAccessToContent(requester, postOwner)) {
-            throw new NotFollowingException();
-        }
+        hasAccessToContent(requester, postOwner);
+
 
         // Kullanıcının beğenilerini al ve hedef kullanıcıyı arat
         boolean isLiked = post.getLikes().stream()
@@ -353,7 +321,7 @@ public class LikeServiceManager implements LikeService {
 
     @Override
     public DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(String username, Long storyId, String targetUsername)
-            throws StudentNotFoundException, StoryNotFoundException, NotFollowingException {
+            throws StudentNotFoundException, StoryNotFoundException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
 
         // Hikayeyi bul
         Story story = storyRepository.findById(storyId)
@@ -363,10 +331,8 @@ public class LikeServiceManager implements LikeService {
         Student storyOwner = story.getStudent();
         Student requester = studentRepository.getByUserNumber(username);
 
-        // Kullanıcının hikayeye erişimi olup olmadığını kontrol et
-        if (!hasAccessToContent(requester, storyOwner)) {
-            throw new NotFollowingException();
-        }
+        hasAccessToContent(requester, storyOwner);
+
 
         // Kullanıcının beğenilerini al ve hedef kullanıcıyı arat
         boolean isLiked = story.getLikes().stream()
@@ -383,20 +349,27 @@ public class LikeServiceManager implements LikeService {
         return new DataResponseMessage<>("Kullanıcı hikayenizi beğenmiş.", true, accountDTO);
     }
 
-    private boolean hasAccessToContent(Student requester, Student contentOwner) {
-        if (requester.equals(contentOwner)) {
-            return true;
+    private void hasAccessToContent(Student student, Student student1) throws BlockingBetweenStudent, StudentProfilePrivateException {
+
+        if (student.equals(student1)) {
+            return;
         }
-        // Eğer içerik sahibi özel değilse, herkes erişebilir
-        if (!contentOwner.isPrivate()) {
-            return true;
+        boolean blocked = student.getBlocked().stream().anyMatch(b -> b.getBlocked().equals(student1)) ||
+                student1.getBlocked().stream().anyMatch(b -> b.getBlocked().equals(student));
+
+        if (blocked) {
+            throw new BlockingBetweenStudent();
         }
 
-        // Eğer içerik sahibi ve isteyen kişi takipleşiyorsa erişime izin ver
-        boolean isFollowing = contentOwner.getFollowers().stream()
-                .anyMatch(follow -> follow.getFollower().equals(requester));
+        if (student1.isPrivate()) {
+            boolean isFollowing = student.getFollowing().stream()
+                    .anyMatch(f -> f.getFollowed().equals(student1));
 
-        return isFollowing;
+            if (!isFollowing) {
+                throw new StudentProfilePrivateException();
+            }
+
+        }
     }
 
 

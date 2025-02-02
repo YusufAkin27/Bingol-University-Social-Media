@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface StoryViewerRepository extends JpaRepository<StoryViewer,Long> {
-    List<Long> findViewedStoryIdsByStudent(Student student);
+    List<StoryViewer> findViewedStoryIdsByStudent(Student student);
 
 }

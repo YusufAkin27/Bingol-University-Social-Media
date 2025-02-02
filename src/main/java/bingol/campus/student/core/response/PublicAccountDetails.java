@@ -1,6 +1,7 @@
 package bingol.campus.student.core.response;
 
 import bingol.campus.post.core.response.PostDTO;
+import bingol.campus.story.core.response.FeatureStoryDTO;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.student.entity.enums.Department;
 import bingol.campus.student.entity.enums.Faculty;
@@ -30,7 +31,7 @@ public class PublicAccountDetails  {
     private boolean isPrivate;
     private long popularityScore;
     private List<PostDTO> posts;         // Gönderi başlıkları veya içerikleri
-    private List<String> stories;       // Hikayeler (Başlıklar veya içerik)
-    private List<String> featuredStories; // Öne çıkan hikayeler
+    private List<StoryDTO> stories;       // Hikayeler (Başlıklar veya içerik)
+    private List<FeatureStoryDTO> featuredStories; // Öne çıkan hikayeler
 
 }

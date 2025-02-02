@@ -7,10 +7,12 @@ import bingol.campus.response.ResponseMessage;
 import bingol.campus.story.business.abstracts.StoryService;
 import bingol.campus.story.core.exceptions.StoryNotActiveException;
 import bingol.campus.story.core.exceptions.*;
+import bingol.campus.story.core.response.FeatureStoryDTO;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.story.core.response.StoryDetails;
 import bingol.campus.student.core.response.SearchAccountDTO;
 import bingol.campus.student.exceptions.StudentNotFoundException;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,7 +46,6 @@ public class StoryController {
     }
 
 
-
     @PutMapping("/{storyId}/feature")
     public ResponseMessage featureStory(@AuthenticationPrincipal UserDetails userDetails,
                                         @PathVariable Long storyId,
@@ -55,6 +56,33 @@ public class StoryController {
         return storyService.featureStory(username, storyId, featuredStoryId);
     }
 
+    @PutMapping("/{featureId}/update")
+    public ResponseMessage featureUpdate(@AuthenticationPrincipal UserDetails userDetails,
+                                         @PathVariable Long featureId,
+                                         @RequestParam(required = false) String title,
+                                         @RequestParam(required = false) MultipartFile coverPhoto) throws FeaturedStoryGroupNotFoundException, StudentNotFoundException, FeaturedStoryGroupNotAccess, IOException {
+        return storyService.featureUpdate(userDetails.getUsername(),featureId,title,coverPhoto);
+    }
+    @GetMapping("/feature/{featureId}")
+    public DataResponseMessage<FeatureStoryDTO> getFeatureId(@AuthenticationPrincipal UserDetails userDetails,
+                                                             @PathVariable Long featureId) throws BlockingBetweenStudent, FeaturedStoryGroupNotFoundException, StudentNotFoundException, StudentProfilePrivateException {
+        return storyService.getFeatureId(userDetails.getUsername(),featureId);
+    }
+    // Belirli bir öğrencinin öne çıkarılan hikayelerini getir
+    @GetMapping("/student/{studentId}/featured-stories")
+    public DataResponseMessage<List<FeatureStoryDTO>> getFeaturedStoriesByStudent(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long studentId)
+            throws BlockingBetweenStudent, FeaturedStoryGroupNotFoundException, StudentNotFoundException, StudentProfilePrivateException {
+        return storyService.getFeaturedStoriesByStudent(userDetails.getUsername(), studentId);
+    }
+
+    // Kullanıcının kendi öne çıkarılan hikayelerini getir
+    @GetMapping("/me/featured-stories")
+    public DataResponseMessage<List<FeatureStoryDTO>> getMyFeaturedStories(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
+        return storyService.getMyFeaturedStories(userDetails.getUsername());
+    }
+
 
     // Tüm hikayeleri sayfalı olarak listeleme
     @GetMapping("/list")
@@ -62,6 +90,7 @@ public class StoryController {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return storyService.getStories(userDetails.getUsername(), pageRequest);
     }
+
     // Belirli bir hikaye detaylarını ve yorumlarını sayfalı olarak getirme
     @GetMapping("/{storyId}")
     public DataResponseMessage<StoryDetails> getStoryDetails(@AuthenticationPrincipal UserDetails userDetails,
@@ -70,7 +99,6 @@ public class StoryController {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return storyService.getStoryDetails(userDetails.getUsername(), storyId, pageRequest);
     }
-
 
 
     // Belirli bir hikayenin süresini uzatma

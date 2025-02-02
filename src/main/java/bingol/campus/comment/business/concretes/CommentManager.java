@@ -19,6 +19,7 @@ import bingol.campus.response.ResponseMessage;
 import bingol.campus.story.core.exceptions.NotFollowingException;
 import bingol.campus.story.core.exceptions.StoryNotActiveException;
 import bingol.campus.story.core.exceptions.StoryNotFoundException;
+import bingol.campus.story.core.exceptions.StudentProfilePrivateException;
 import bingol.campus.story.entity.Story;
 import bingol.campus.story.repository.StoryRepository;
 import bingol.campus.student.core.converter.StudentConverter;
@@ -46,7 +47,7 @@ public class CommentManager implements CommentService {
 
     @Override
     @Transactional
-    public ResponseMessage addCommentToStory(String username, Long storyId, String content) throws StudentNotFoundException, StoryNotFoundException, BlockingBetweenStudent, NotFollowingException, StoryNotActiveException {
+    public ResponseMessage addCommentToStory(String username, Long storyId, String content) throws StudentNotFoundException, StoryNotFoundException, BlockingBetweenStudent, NotFollowingException, StoryNotActiveException, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username); // Öğrenci bilgisi alınıyor
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new); // Hikaye bilgisi alınıyor
 
@@ -87,7 +88,7 @@ public class CommentManager implements CommentService {
     }
 
 
-    public void checkAccessToStory(Student student, Story story) throws BlockingBetweenStudent, NotFollowingException, StoryNotActiveException {
+    public void checkAccessToStory(Student student, Story story) throws BlockingBetweenStudent, StoryNotActiveException, StudentProfilePrivateException {
         // Hikayenin aktif olup olmadığını kontrol et
         if (!story.isActive()) {
             throw new StoryNotActiveException();
@@ -96,26 +97,10 @@ public class CommentManager implements CommentService {
         // Hikayeyi paylaştığı öğrenci (student1) bilgisi
         Student student1 = story.getStudent();
 
-        // Engellemeleri kontrol et (student1 tarafından engellenmiş mi ve vice versa)
-        boolean isBlockedByStudent1 = student1.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student));  // student1 tarafından engellenmiş mi?
-        boolean isBlockedByStudent = student.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student1));  // student tarafından engellenmiş mi?
-
-        if (isBlockedByStudent1 || isBlockedByStudent) {
-            throw new BlockingBetweenStudent();  // Eğer engellenmişse, engellenmiş hatası fırlatılır
-        }
-
-        // Takip durumu kontrolü
-        boolean isFollowing = student.getFollowing().stream()
-                .anyMatch(followRelation -> followRelation.getFollower().equals(student1));  // student1 takip ediliyor mu?
-
-        if (student1.isPrivate() && !isFollowing) {  // Profil gizli ve takip edilmiyorsa, erişim reddedilir
-            throw new NotFollowingException();
-        }
+        hasAccessToContent(student, student1);
     }
 
-    public void checkAccessToPost(Student student, Post post) throws BlockingBetweenStudent, NotFollowingException, PostNotIsActiveException {
+    public void checkAccessToPost(Student student, Post post) throws BlockingBetweenStudent, NotFollowingException, PostNotIsActiveException, StudentProfilePrivateException {
         // Gönderinin aktif olup olmadığını kontrol et
         if (!post.isActive()) {
             throw new PostNotIsActiveException();
@@ -124,28 +109,35 @@ public class CommentManager implements CommentService {
         // Gönderiyi paylaştığı öğrenci (student1) bilgisi
         Student student1 = post.getStudent();
 
-        // Engellemeleri kontrol et (student1 tarafından engellenmiş mi ve vice versa)
-        boolean isBlockedByStudent1 = student1.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student));  // student1 tarafından engellenmiş mi?
-        boolean isBlockedByStudent = student.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student1));  // student tarafından engellenmiş mi?
+        hasAccessToContent(student, student1);
+    }
 
-        if (isBlockedByStudent1 || isBlockedByStudent) {
-            throw new BlockingBetweenStudent();  // Eğer engellenmişse, engellenmiş hatası fırlatılır
+    private void hasAccessToContent(Student student, Student student1) throws BlockingBetweenStudent, StudentProfilePrivateException {
+
+        if (student.equals(student1)) {
+            return;
+        }
+        boolean blocked = student.getBlocked().stream().anyMatch(b -> b.getBlocked().equals(student1)) ||
+                student1.getBlocked().stream().anyMatch(b -> b.getBlocked().equals(student));
+
+        if (blocked) {
+            throw new BlockingBetweenStudent();
         }
 
-        // Takip durumu kontrolü
-        boolean isFollowing = student.getFollowing().stream()
-                .anyMatch(followRelation -> followRelation.getFollower().equals(student1));  // student1 takip ediliyor mu?
+        if (student1.isPrivate()) {
+            boolean isFollowing = student.getFollowing().stream()
+                    .anyMatch(f -> f.getFollowed().equals(student1));
 
-        if (student1.isPrivate() && !isFollowing) {  // Profil gizli ve takip edilmiyorsa, erişim reddedilir
-            throw new NotFollowingException();
+            if (!isFollowing) {
+                throw new StudentProfilePrivateException();
+            }
+
         }
     }
 
     @Override
     @Transactional
-    public ResponseMessage addCommentToPost(String username, Long postId, String content) throws PostNotFoundException, StudentNotFoundException, PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent {
+    public ResponseMessage addCommentToPost(String username, Long postId, String content) throws PostNotFoundException, StudentNotFoundException, PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username); // Öğrenci bilgisi alınıyor
         Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new); // Hikaye bilgisi alınıyor
 
@@ -233,12 +225,14 @@ public class CommentManager implements CommentService {
                     CommentDTO dto = new CommentDTO();
                     dto.setId(comment.getId());
                     dto.setContent(comment.getContent());
+                    dto.setUsername(comment.getStudent().getUsername());
                     dto.setCreatedAt(comment.getCreatedAt());
+                    dto.setProfilePhoto(comment.getStudent().getProfilePhoto());
 
                     // Yalnızca aktif gönderi veya hikaye varsa
-                    if (comment.getPost() != null && comment.getPost().isActive()) {
+                    if (comment.getPost() != null ) {
                         dto.setPostId(comment.getPost().getId());  // Eğer yorum gönderiye aitse ve aktifse
-                    } else if (comment.getStory() != null && comment.getStory().isActive()) {
+                    } else if (comment.getStory() != null ) {
                         dto.setStoryId(comment.getStory().getId());  // Eğer yorum hikayeye aitse ve aktifse
                     }
                     return dto;
@@ -251,7 +245,7 @@ public class CommentManager implements CommentService {
 
     @Override
     public DataResponseMessage<List<CommentDTO>> getStoryComments(String username, Long storyId, Pageable pageable)
-            throws NotFollowingException, BlockingBetweenStudent, StoryNotActiveException, StudentNotFoundException, StoryNotFoundException {
+            throws NotFollowingException, BlockingBetweenStudent, StoryNotActiveException, StudentNotFoundException, StoryNotFoundException, StudentProfilePrivateException {
 
         // Kullanıcı bilgisi alınıyor
         Student student = studentRepository.getByUserNumber(username);
@@ -272,6 +266,9 @@ public class CommentManager implements CommentService {
                     dto.setId(comment.getId());
                     dto.setContent(comment.getContent());
                     dto.setCreatedAt(comment.getCreatedAt());
+                    dto.setProfilePhoto(comment.getStudent().getProfilePhoto());
+                    dto.setStoryId(comment.getStory().getId());
+                    dto.setUsername(comment.getStudent().getUsername());
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -282,7 +279,7 @@ public class CommentManager implements CommentService {
 
     @Override
     public DataResponseMessage<List<CommentDTO>> getPostComments(String username, Long postId, Pageable pageable)
-            throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent {
+            throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
 
         // Kullanıcı bilgisi alınıyor
         Student student = studentRepository.getByUserNumber(username);
@@ -301,6 +298,9 @@ public class CommentManager implements CommentService {
                 .map(comment -> {
                     CommentDTO dto = new CommentDTO();
                     dto.setId(comment.getId());
+                    dto.setPostId(comment.getPost().getId());
+                    dto.setUsername(comment.getStudent().getUsername());
+                    dto.setProfilePhoto(comment.getStudent().getProfilePhoto());
                     dto.setContent(comment.getContent());
                     dto.setCreatedAt(comment.getCreatedAt());
                     return dto;

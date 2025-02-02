@@ -4,6 +4,6 @@ import bingol.campus.security.exception.BusinessException;
 
 public class NotFollowingException extends BusinessException {
     public NotFollowingException( ) {
-        super("Hikayelere erişim için takip etmeniz gerekmektedir.");
+        super(" erişim için takip etmeniz gerekmektedir.");
     }
 }

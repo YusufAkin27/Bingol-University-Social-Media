@@ -2,6 +2,10 @@ package bingol.campus.student.core.converter;
 
 import bingol.campus.post.core.converter.PostConverter;
 import bingol.campus.security.entity.Role;
+
+import bingol.campus.story.core.response.FeatureStoryDTO;
+import bingol.campus.story.core.response.StoryDTO;
+import bingol.campus.story.entity.FeaturedStory;
 import bingol.campus.story.entity.Story;
 import bingol.campus.student.core.response.PrivateAccountDetails;
 import bingol.campus.student.core.response.PublicAccountDetails;
@@ -14,12 +18,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class StudentConverterImpl implements StudentConverter {
     private final PasswordEncoder passwordEncoder;
     private final PostConverter postConverter;
+
+
 
 
     @Override
@@ -93,18 +100,44 @@ public class StudentConverterImpl implements StudentConverter {
                 .postCount(student.getPost().size())
                 .followingCount(student.getFollowing().size())
                 .featuredStories(student.getFeaturedStories().stream()
-                        .map(Story::getPhoto)
+                        .map(this::convertToFeatureStoryDTO)
                         .toList())
                 .posts(student.getPost().stream()
                         .map(postConverter::toDto)
                         .toList())
                 .stories(student.getStories().stream()
-                        .map(Story::getPhoto)
+                        .map(this::convertToStoryDTO)
                         .toList())
                 .build();
 
         return publicAccountDetails;
     }
+
+    private StoryDTO convertToStoryDTO(Story story) {
+        StoryDTO storyDTO = new StoryDTO();
+
+        storyDTO.setUsername(story.getStudent().getUsername());
+        storyDTO.setProfilePhoto(story.getStudent().getProfilePhoto());
+
+        storyDTO.setPhoto(story.getPhoto());
+        storyDTO.setStoryId(story.getId());
+
+        return storyDTO;
+    }
+
+
+    private FeatureStoryDTO convertToFeatureStoryDTO(FeaturedStory featuredStory) {
+        // FeaturedStory nesnesinden gerekli bilgileri alarak FeatureStoryDTO oluşturuyoruz
+        return FeatureStoryDTO.builder()
+                .featureStoryId(featuredStory.getId()) // FeaturedStory'nin ID'si
+                .title(featuredStory.getTitle()) // Başlık
+                .coverPhoto(featuredStory.getCoverPhoto()) // Kapak fotoğrafı
+                .storyDTOS(featuredStory.getStories().stream()
+                        .map(this::convertToStoryDTO) // Hikayeleri dönüştür
+                        .collect(Collectors.toList())) // StoryDTO'ları liste halinde al
+                .build();
+    }
+
 
     @Override
     public PrivateAccountDetails privateAccountDto(Student student) {

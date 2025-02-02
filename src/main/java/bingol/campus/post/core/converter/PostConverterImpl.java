@@ -18,6 +18,7 @@ public class PostConverterImpl implements PostConverter {
     @Override
     public PostDTO toDto(Post post) {
         return PostDTO.builder()
+                .postId(post.getId())
                 .like(post.getLikes().size())
                 .comment(post.getComments().size())
                 .popularityScore(post.getPopularityScore())

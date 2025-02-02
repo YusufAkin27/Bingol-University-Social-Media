@@ -1,9 +1,7 @@
 package bingol.campus.story.business.concretes;
 
 import bingol.campus.comment.core.converter.CommentConverter;
-import bingol.campus.comment.core.response.CommentDTO;
 import bingol.campus.comment.entity.Comment;
-import bingol.campus.comment.repository.CommentRepository;
 import bingol.campus.followRelation.core.exceptions.BlockingBetweenStudent;
 import bingol.campus.like.core.converter.LikeConverter;
 import bingol.campus.like.entity.Like;
@@ -17,6 +15,7 @@ import bingol.campus.response.ResponseMessage;
 import bingol.campus.story.business.abstracts.StoryService;
 import bingol.campus.story.core.exceptions.*;
 import bingol.campus.story.core.converter.StoryConverter;
+import bingol.campus.story.core.response.FeatureStoryDTO;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.story.core.response.StoryDetails;
 
@@ -74,46 +73,47 @@ public class StoryManager implements StoryService {
         story.setComments(new ArrayList<>());
         story.setLikes(new ArrayList<>());
         story.setCreatedAt(LocalDateTime.now());
-        story.setExpiresAt(LocalDateTime.now().plusDays(1)); // Bitiş tarihi şu an +1 gün olacak şekilde ayarlandı
+        story.setExpiresAt(LocalDateTime.now().plusDays(1));
         story.setStudent(student);
 
-        // Fotoğraf yüklemesi
         if (photos != null && !photos.isEmpty()) {
             String contentType = photos.getContentType();
 
-            // Dosya türünü kontrol et
-            if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/png"))) {
+            if (contentType == null ||
+                    (!contentType.equals("image/jpeg") &&
+                            !contentType.equals("image/png"))) {
                 return new ResponseMessage("Yalnızca JPEG ve PNG formatındaki dosyalar kabul edilir.", false);
             }
 
-            // Dosya boyutunu kontrol et (maksimum 10MB)
             long maxFileSize = 10 * 1024 * 1024; // 10MB
             if (photos.getSize() > maxFileSize) {
                 return new ResponseMessage("Dosya boyutu 10MB'yi geçemez.", false);
             }
 
-            // Cloudinary'ye yükle
-            Map<String, String> uploadResult = cloudinary.uploader().upload(photos.getBytes(), ObjectUtils.emptyMap());
-            String photoUrl = uploadResult.get("url");
+
+            Map<String, Object> uploadParams = ObjectUtils.emptyMap(); // Parametreler olmadan doğrudan yükle
+
+            Map uploadResult = cloudinary.uploader().upload(photos.getBytes(), uploadParams);
+            String photoUrl = (String) uploadResult.get("secure_url");
 
             story.setPhoto(photoUrl);
         }
 
-        // Hikayeyi ve öğrenciyi kaydet
         student.getStories().add(story);
         storyRepository.save(story);
         studentRepository.save(student);
 
-        List<String> fmcTokens = student.getFollowers().stream()
+
+        List<String> fcmTokens = student.getFollowers().stream()
                 .filter(f -> f.getFollowed().getFcmToken() != null && f.getFollowed().getIsActive())
                 .map(f -> f.getFollowed().getFcmToken())
                 .collect(Collectors.toList());
 
-        if (!fmcTokens.isEmpty()) {
+        if (!fcmTokens.isEmpty()) {
             SendBulkNotificationRequest sendBulkNotificationRequest = new SendBulkNotificationRequest();
             sendBulkNotificationRequest.setTitle("Yeni Hikaye");
-            sendBulkNotificationRequest.setMessage(student.getUsername() + " kullanıcısı yeni hikaye paylaştı.");
-            sendBulkNotificationRequest.setFmcTokens(fmcTokens);
+            sendBulkNotificationRequest.setMessage(student.getUsername() + " yeni bir hikaye paylaştı.");
+            sendBulkNotificationRequest.setFmcTokens(fcmTokens);
 
             try {
                 notificationController.sendToUsers(sendBulkNotificationRequest);
@@ -123,7 +123,6 @@ public class StoryManager implements StoryService {
         } else {
             System.out.println("Takipçiler arasında bildirim gönderilecek FCM token'ı bulunamadı.");
         }
-
 
         return new ResponseMessage("Hikaye başarıyla eklendi.", true);
     }
@@ -160,39 +159,114 @@ public class StoryManager implements StoryService {
         return new DataResponseMessage<>("Hikaye detayları başarıyla getirildi.", true, storyDetails);
     }
 
+    @Override
+    @Transactional
+    public ResponseMessage featureUpdate(String username, Long featureId, String title, MultipartFile coverPhoto) throws StudentNotFoundException, FeaturedStoryGroupNotFoundException, FeaturedStoryGroupNotAccess, IOException {
+        Student student = studentRepository.getByUserNumber(username);
+        FeaturedStory featuredStory = featuredStoryRepository.findById(featureId).orElseThrow(FeaturedStoryGroupNotFoundException::new);
+        if (!featuredStory.getStudent().equals(student)) {
+            throw new FeaturedStoryGroupNotAccess();
+        }
+        if (title != null) {
+            featuredStory.setTitle(title);
+        }
+        if (coverPhoto != null && !coverPhoto.isEmpty()) {
+            String contentType = coverPhoto.getContentType();
+
+            if (contentType == null ||
+                    (!contentType.equals("image/jpeg") &&
+                            !contentType.equals("image/png"))) {
+                return new ResponseMessage("Yalnızca JPEG ve PNG formatındaki dosyalar kabul edilir.", false);
+            }
+
+            long maxFileSize = 10 * 1024 * 1024; // 10MB
+            if (coverPhoto.getSize() > maxFileSize) {
+                return new ResponseMessage("Dosya boyutu 10MB'yi geçemez.", false);
+            }
+
+
+            Map<String, Object> uploadParams = ObjectUtils.emptyMap(); // Parametreler olmadan doğrudan yükle
+
+            Map uploadResult = cloudinary.uploader().upload(coverPhoto.getBytes(), uploadParams);
+            String photoUrl = (String) uploadResult.get("secure_url");
+
+            featuredStory.setCoverPhoto(photoUrl);
+        }
+
+        featuredStoryRepository.save(featuredStory);
+        return new ResponseMessage("öne çıkarılan hikaye grubu düzenlendi", true);
+    }
+
+    @Override
+    public DataResponseMessage<FeatureStoryDTO> getFeatureId(String username, Long featureId) throws StudentNotFoundException, FeaturedStoryGroupNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
+        Student student = studentRepository.getByUserNumber(username);
+        FeaturedStory featuredStory = featuredStoryRepository.findById(featureId).orElseThrow(FeaturedStoryGroupNotFoundException::new);
+        Student student1 = featuredStory.getStudent();
+        accessStory(student, student1);
+        FeatureStoryDTO featureStoryDTO = storyConverter.toFeatureStoryDto(featuredStory);
+
+        return new DataResponseMessage<>("başarılı", true, featureStoryDTO);
+    }
+
+    @Override
+    public DataResponseMessage<List<FeatureStoryDTO>> getFeaturedStoriesByStudent(String username, Long studentId) throws StudentNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
+        Student student = studentRepository.getByUserNumber(username);
+        Student student1 = studentRepository.findById(studentId).orElseThrow(StudentNotFoundException::new);
+        accessStory(student, student1);
+        List<FeatureStoryDTO> featureStoryDTOS = student1.getFeaturedStories().stream().map(storyConverter::toFeatureStoryDto).toList();
+        return new DataResponseMessage<>("başarılı", true, featureStoryDTOS);
+    }
+
+    @Override
+    public DataResponseMessage<List<FeatureStoryDTO>> getMyFeaturedStories(String username) throws StudentNotFoundException {
+        Student student = studentRepository.getByUserNumber(username);
+        List<FeatureStoryDTO> featureStoryDTOS = student.getFeaturedStories().stream().map(storyConverter::toFeatureStoryDto).toList();
+        return new DataResponseMessage<>("başarılı", true, featureStoryDTOS);
+    }
+
+    private void accessStory(Student student, Student student1) throws BlockingBetweenStudent, StudentProfilePrivateException {
+
+        if (student.equals(student1)) {
+            return;
+        }
+        boolean blocked = student.getBlocked().stream().anyMatch(b -> b.getBlocked().equals(student1)) ||
+                student1.getBlocked().stream().anyMatch(b -> b.getBlocked().equals(student));
+
+        if (blocked) {
+            throw new BlockingBetweenStudent();
+        }
+
+        if (student1.isPrivate()) {
+            boolean isFollowing = student.getFollowing().stream()
+                    .anyMatch(f -> f.getFollowed().equals(student1));
+
+            if (!isFollowing) {
+                throw new StudentProfilePrivateException();
+            }
+
+        }
+    }
 
 
     @Override
     @Transactional
     public ResponseMessage featureStory(String username, Long storyId, Long featuredStoryId)
             throws StudentNotFoundException, StoryNotFoundException, OwnerStoryException, AlreadyFeaturedStoriesException, FeaturedStoryGroupNotFoundException {
-
-        // Öğrenciyi al
         Student student = studentRepository.getByUserNumber(username);
-
-        // Hikayeyi al
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
 
-        // Kullanıcının hikayesi olup olmadığını kontrol et
         if (!student.getStories().contains(story)) {
             throw new OwnerStoryException();
         }
-
-        // Hikaye zaten bir FeaturedStory grubunda yer alıyor mu?
-        Optional<FeaturedStory> existingFeaturedGroup = featuredStoryRepository.findAllByStudent(student)
-                .stream()
-                .filter(fs -> fs.getStories().contains(story)) // Bu hikaye zaten mevcut grup içinde mi?
-                .findFirst();
-
+        Optional<FeaturedStory> existingFeaturedGroup = featuredStoryRepository.findFeaturedStoryByStudentAndStory(student, story);
         if (existingFeaturedGroup.isPresent()) {
             throw new AlreadyFeaturedStoriesException();
         }
 
-        // Öne çıkan hikaye grubunu bul ya da yeni oluştur
         FeaturedStory featuredStory;
         if (featuredStoryId != null) {
             featuredStory = featuredStoryRepository.findById(featuredStoryId)
-                    .orElseThrow(() -> new FeaturedStoryGroupNotFoundException());
+                    .orElseThrow(FeaturedStoryGroupNotFoundException::new);
         } else {
             // Yeni bir FeaturedStory grubu oluştur
             featuredStory = new FeaturedStory();
@@ -206,17 +280,16 @@ public class StoryManager implements StoryService {
         // Hikayeyi öne çıkan olarak işaretle ve gruba ekle
         story.setFeatured(true);  // Hikaye öne çıkan olarak işaretleniyor
         story.setActive(true);    // Hikaye aktif duruma getirilir
-        student.getFeaturedStories().add(story);  // Öğrenciye ait featured stories listesine eklenir
+        story.setFeaturedStory(featuredStory);
+        // Hikayeyi gruba ekle
+        featuredStory.getStories().add(story);  // Hikayeyi FeaturedStory'nin listesine ekle
 
-        // Hikayeyi kaydet (Hikaye güncelleniyor)
-        storyRepository.save(story);
-
-        // Güncellenmiş featuredStory'yi kaydet
-        featuredStoryRepository.save(featuredStory);
+        // Hem hikayeyi hem de featuredStory'i kaydet
+        storyRepository.save(story);  // Hikaye kaydediliyor
+        featuredStoryRepository.save(featuredStory);  // FeaturedStory kaydediliyor
 
         return new ResponseMessage("Hikaye başarıyla öne çıkarılanlara eklendi.", true);
     }
-
 
 
     @Override
@@ -235,7 +308,6 @@ public class StoryManager implements StoryService {
         // Sonuçları döndürüyoruz
         return new DataResponseMessage<>("Aktif hikayeler başarıyla getirildi.", true, storyDetails);
     }
-
 
 
     @Override

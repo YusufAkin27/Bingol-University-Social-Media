@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 public class CommentDTO {
     private long id;
     private String username;
+    private String profilePhoto;
 
     private long postId;
 

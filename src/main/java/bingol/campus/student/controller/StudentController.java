@@ -30,6 +30,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/v1/api/student")
+@CrossOrigin(origins = "http://localhost:5174") // Sadece bu frontend erişebilir
 @RequiredArgsConstructor
 
 public class StudentController {
@@ -82,6 +83,10 @@ public class StudentController {
         return studentService.updatePassword(userDetails.getUsername(), newPassword);
     }
 
+    @PutMapping("/updateFcmToken")
+    public ResponseMessage updateFmcToken(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String fcmToken) throws StudentNotFoundException {
+        return studentService.updateFcmToken(userDetails.getUsername(), fcmToken);
+    }
 
     // Profil fotoğrafını silme
     @DeleteMapping("/profile-photo")
@@ -104,8 +109,8 @@ public class StudentController {
     }
 
     @GetMapping("/account-details/{userId}")
-    public DataResponseMessage accountDetails(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long userId) throws StudentNotFoundException, UserBlockedException, BlockedByUserException {
-        return studentService.accountDetails(userDetails.getUsername(),userId);
+    public DataResponseMessage accountDetails(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long userId) throws StudentNotFoundException, UserBlockedException, BlockedByUserException {
+        return studentService.accountDetails(userDetails.getUsername(), userId);
     }
 
     @GetMapping("/students-by-department")
@@ -136,6 +141,7 @@ public class StudentController {
     public DataResponseMessage<List<PublicAccountDetails>> getBestPopularity(@AuthenticationPrincipal UserDetails userDetails) {
         return studentService.getBestPopularity(userDetails.getUsername());
     }
+
     //ana sayfadaki postlar
     @GetMapping("/home/posts")
     public DataResponseMessage<List<PostDTO>> getHomePosts(@AuthenticationPrincipal UserDetails userDetails,

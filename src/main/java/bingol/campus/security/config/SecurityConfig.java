@@ -13,6 +13,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -28,55 +32,49 @@ public class SecurityConfig {
         String[] publicPaths = {
                 "/auth/**",
                 "/v1/api/admin/register",
-                "/v1/api/token/",
-                "/v1/api/meal/**",
-                "/v1/api/weather/**",
-                "/v1/api/student/sign-up",
-                "/v1/api/teacher/register",
-                "/v1/api/news/**"
+                "/v1/api/token/**",
+                "/v1/api/student/sign-up"
         };
 
         // Sadece admin için yollar
         String[] adminPaths = {
-               "/v1/api/admin/**"
+                "/v1/api/admin/**"
         };
 
-        // öğrenci rolleri için yollar
+        // Öğrenci rolleri için yollar
         String[] studentPaths = {
-                "/v1/api/student/**",
-
+                "/v1/api/student/**"
         };
 
-
-
-        // Haber görüntüleme yolları (public)
-        String[] newsPublicPaths = {
-                "/v1/api/news/getAll",
-                "/v1/api/news/getById/**",
-                "/v1/api/news/getByUrl/**"
-        };
-
-        return httpSecurity.authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        // Public erişim
+        return httpSecurity
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS yapılandırmasını ekledik
+                .csrf(AbstractHttpConfigurer::disable) // CSRF'yi devre dışı bırak
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless yapı
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers(publicPaths).permitAll()
-                        // Admin erişimi
                         .requestMatchers(adminPaths).hasAuthority(Role.ADMIN.getAuthority())
-                        // Öğretmen  erişimi
-                        // öğrenci erişimi
                         .requestMatchers(studentPaths).hasAuthority(Role.STUDENT.getAuthority())
-                        // Haber görüntüleme
-                        .requestMatchers(newsPublicPaths).permitAll()
-                        // Diğer istekler
-                        .anyRequest().authenticated())
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .cors(AbstractHttpConfigurer::disable)
-                .csrf(AbstractHttpConfigurer::disable)
                 .build();
     }
 
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:5174")); // Frontend adresi
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
