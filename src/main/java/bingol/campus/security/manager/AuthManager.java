@@ -1,5 +1,6 @@
 package bingol.campus.security.manager;
 
+import bingol.campus.response.ResponseMessage;
 import bingol.campus.security.dto.*;
 import bingol.campus.security.entity.User;
 import bingol.campus.security.exception.*;
@@ -9,12 +10,14 @@ import bingol.campus.security.repository.UserRepository;
 import bingol.campus.security.service.JwtService;
 import bingol.campus.student.entity.Student;
 
+import bingol.campus.student.repository.StudentRepository;
 import bingol.campus.student.rules.StudentRules;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -24,7 +27,8 @@ public class AuthManager implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
+    private final TokenRepository tokenRepository;
+    private final StudentRepository studentRepository;
 
 
     @Override
@@ -90,6 +94,15 @@ public class AuthManager implements AuthService {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Bir hata meydana geldi: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional
+    public ResponseMessage logout(String username) throws UserNotFoundException {
+        Student student = studentRepository.findByUserNumber(username).orElseThrow(UserNotFoundException::new );
+        tokenRepository.deleteAllByUserId(student.getId());
+        studentRepository.save(student);
+        return new ResponseMessage("çıkış başarılı",true);
     }
 
 

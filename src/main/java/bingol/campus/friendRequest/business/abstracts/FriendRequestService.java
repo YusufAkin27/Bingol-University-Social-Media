@@ -6,16 +6,18 @@ import bingol.campus.friendRequest.core.response.ReceivedFriendRequestDTO;
 import bingol.campus.friendRequest.core.response.SentFriendRequestDTO;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
+import bingol.campus.student.exceptions.StudentDeletedException;
+import bingol.campus.student.exceptions.StudentNotActiveException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 public interface FriendRequestService {
-    ResponseMessage sendFriendRequest(String username, Long userId) throws StudentNotFoundException, SelfFriendRequestException, AlreadySentRequestException, AlreadyFollowingException, BlockedByUserException, UserBlockedException;
-    ResponseMessage acceptFriendRequest(String username, Long requestId) throws AlreadyAcceptedRequestException, FriendRequestNotFoundException, StudentNotFoundException, UnauthorizedRequestException;
+    ResponseMessage sendFriendRequest(String username, Long userId) throws StudentNotFoundException, SelfFriendRequestException, AlreadySentRequestException, AlreadyFollowingException, BlockedByUserException, UserBlockedException, StudentDeletedException, StudentNotActiveException;
+    ResponseMessage acceptFriendRequest(String username, Long requestId) throws AlreadyAcceptedRequestException, FriendRequestNotFoundException, StudentNotFoundException, UnauthorizedRequestException, StudentDeletedException, StudentNotActiveException;
 
-    ResponseMessage rejectFriendRequest(String username, Long requestId) throws AlreadyRejectedRequestException, FriendRequestNotFoundException, StudentNotFoundException;
+    ResponseMessage rejectFriendRequest(String username, Long requestId) throws AlreadyRejectedRequestException, FriendRequestNotFoundException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException;
 
     DataResponseMessage getFriendRequestById(String username, Long requestId) throws UnauthorizedRequestException, FriendRequestNotFoundException, StudentNotFoundException;
 

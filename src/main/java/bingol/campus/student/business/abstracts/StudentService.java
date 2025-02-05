@@ -34,12 +34,9 @@ public interface StudentService {
     ResponseMessage uploadProfilePhoto(String username, MultipartFile file) throws StudentNotFoundException, IOException, StudentDeletedException, StudentNotActiveException;
 
 
-
     ResponseMessage deleteStudent(String username) throws StudentNotFoundException, StudentAlreadyIsActiveException;
 
     ResponseMessage updatePassword(String username, String newPassword) throws StudentNotFoundException, StudentInactiveException, SamePasswordException, StudentDeletedException, StudentNotActiveException;
-
-
 
     ResponseMessage updateStudentStatus(String username, Boolean isActive) throws StudentNotFoundException, StudentStatusAlreadySetException;
 
@@ -80,4 +77,10 @@ public interface StudentService {
     DataResponseMessage<List<StoryDTO>> getHomeStories(String username, int page) throws StudentNotFoundException;
 
     ResponseMessage updateFcmToken(String username, String fcmToken) throws StudentNotFoundException;
+
+    ResponseMessage forgotPassword(String username) throws StudentNotFoundException;
+
+    ResponseMessage resetPassword(String token, String newPassword);
+
+    ResponseMessage active(String token);
 }

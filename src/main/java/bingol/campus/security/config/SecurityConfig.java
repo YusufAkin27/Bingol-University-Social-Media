@@ -33,7 +33,12 @@ public class SecurityConfig {
                 "/auth/**",
                 "/v1/api/admin/register",
                 "/v1/api/token/**",
-                "/v1/api/student/sign-up"
+                "/v1/api/student/sign-up",
+                "/v1/api/student/forgot-password/**",
+                "/v1/api/student/reset-password/**",
+                "/v1/api/student/active/**",
+
+
         };
 
         // Sadece admin için yollar
@@ -68,7 +73,15 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5174")); // Frontend adresi
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://10.0.2.2:64135",  // Android Emulator (Dart VM Service Portu)
+                "http://10.0.2.2:9101",   // Flutter DevTools için
+                "http://10.0.2.2:54109",  // Flutter Web Portu
+                "http://localhost:54109", // Flutter Web Localhost
+                "http://127.0.0.1:64135", // Dart VM Service Localhost
+                "http://127.0.0.1:9101"   // Flutter DevTools Localhost    // Web/Desktop için
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

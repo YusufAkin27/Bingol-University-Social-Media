@@ -50,4 +50,7 @@ public interface PostService {
     DataResponseMessage<List<LikeDetailsDTO>> getStoryLikeDetails(String username, Long storyId, Pageable pageRequest) throws StudentNotFoundException, OwnerStoryException, StoryNotFoundException, PostAccessDeniedWithPrivateException, PostAccessDeniedWithBlockerException;
 
     DataResponseMessage<List<CommentDetailsDTO>> getStoryCommentDetails(String username, Long storyId, Pageable pageRequest) throws StudentNotFoundException, StoryNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException;
+
+    DataResponseMessage<List<PostDTO>> archivedPosts(String username) throws StudentNotFoundException;
+
 }

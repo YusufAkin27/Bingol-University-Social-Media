@@ -8,10 +8,12 @@ import bingol.campus.post.core.response.LikeDetailsDTO;
 import bingol.campus.post.core.response.PostDTO;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
+import bingol.campus.security.entity.User;
 import bingol.campus.security.exception.UserNotFoundException;
 import bingol.campus.story.core.exceptions.OwnerStoryException;
 import bingol.campus.story.core.exceptions.StoryNotFoundException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.PageRequest;
@@ -38,27 +40,30 @@ public class PostController {
             @RequestParam(value = "location", required = false) String location,
             @RequestParam(value = "tagAPerson", required = false) List<String> tagAPerson,
             @RequestParam("photos") MultipartFile[] photos) throws UnauthorizedTaggingException, InvalidPostRequestException, StudentNotFoundException, BlockedUserTaggedException, IOException {
-        return postService.add(userDetails.getUsername(),  description, location, tagAPerson, photos);
+        return postService.add(userDetails.getUsername(), description, location, tagAPerson, photos);
     }
 
     @DeleteMapping("/{postId}")
     public ResponseMessage add(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws UserNotFoundException, PostNotFoundForUserException, PostNotFoundException, PostAlreadyNotActiveException, StudentNotFoundException, PostAlreadyDeleteException {
-        return postService.delete(userDetails.getUsername(),postId);
+        return postService.delete(userDetails.getUsername(), postId);
     }
+
     @PutMapping("/{postId}")
     public ResponseMessage updatePost(@AuthenticationPrincipal UserDetails userDetails,
                                       @PathVariable Long postId,
                                       @RequestParam(value = "description", required = false) String description,
                                       @RequestParam(value = "location", required = false) String location,
                                       @RequestParam(value = "tagAPerson", required = false) List<String> tagAPerson,
-                                      @RequestParam(value = "photos",required = false) MultipartFile[] photos) throws UnauthorizedTaggingException, InvalidPostRequestException, StudentNotFoundException, BlockedUserTaggedException, IOException, PostNotFoundForUserException, PostNotFoundException {
+                                      @RequestParam(value = "photos", required = false) MultipartFile[] photos) throws UnauthorizedTaggingException, InvalidPostRequestException, StudentNotFoundException, BlockedUserTaggedException, IOException, PostNotFoundForUserException, PostNotFoundException {
         return postService.update(userDetails.getUsername(), postId, description, location, tagAPerson, photos);
     }
+
     @GetMapping("/details/{postId}")
-    public DataResponseMessage<PostDTO>getPostDetails(@AuthenticationPrincipal UserDetails userDetails,
-                                                            @PathVariable Long postId) throws StudentNotFoundException, PostAccessDeniedWithPrivateException, PostNotFoundException, PostAccessDeniedWithBlockerException {
+    public DataResponseMessage<PostDTO> getPostDetails(@AuthenticationPrincipal UserDetails userDetails,
+                                                       @PathVariable Long postId) throws StudentNotFoundException, PostAccessDeniedWithPrivateException, PostNotFoundException, PostAccessDeniedWithBlockerException {
         return postService.getDetails(userDetails.getUsername(), postId);
     }
+
     @GetMapping("/my-posts")
     public DataResponseMessage<List<PostDTO>> getMyPosts(@AuthenticationPrincipal UserDetails userDetails, Pageable pageable) throws StudentNotFoundException {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
@@ -85,6 +90,7 @@ public class PostController {
     public ResponseMessage getCommentCount(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException {
         return postService.getCommentCount(userDetails.getUsername(), postId);
     }
+
     @GetMapping("/like-details/{postId}")
     public DataResponseMessage<List<LikeDetailsDTO>> getLikeDetails(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -93,6 +99,7 @@ public class PostController {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return postService.getLikeDetails(userDetails.getUsername(), postId, pageRequest);
     }
+
     @GetMapping("/comment-details/{postId}")
     public DataResponseMessage<List<CommentDetailsDTO>> getCommentDetails(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -110,6 +117,7 @@ public class PostController {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return postService.getStoryLikeDetails(userDetails.getUsername(), storyId, pageRequest);
     }
+
     @GetMapping("/comment-details/{storyId}")
     public DataResponseMessage<List<CommentDetailsDTO>> getStoryCommentDetails(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -119,5 +127,10 @@ public class PostController {
         return postService.getStoryCommentDetails(userDetails.getUsername(), storyId, pageRequest);
     }
 
+    @GetMapping("/archivedPosts")
+    public DataResponseMessage<List<PostDTO>> archivedPosts(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
+        return postService.archivedPosts(userDetails.getUsername());
+    }
+    // arşivden kaldırma
 
 }

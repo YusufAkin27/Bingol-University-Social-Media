@@ -34,9 +34,10 @@ public class StoryController {
     // Yeni hikaye ekleme
     @PostMapping("/add")
     public ResponseMessage add(@AuthenticationPrincipal UserDetails userDetails,
-                               @RequestParam("photos") MultipartFile photos) throws StudentNotFoundException, IOException {
-        return storyService.add(userDetails.getUsername(), photos);
+                               @RequestParam("file") MultipartFile file) throws StudentNotFoundException, IOException {
+        return storyService.add(userDetails.getUsername(), file);
     }
+
 
     // Mevcut bir hikayeyi silme
     @DeleteMapping("/{storyId}")
@@ -154,4 +155,9 @@ public class StoryController {
         return storyService.getLike(userDetails.getUsername(), storyId);
     }
 
+    @GetMapping("/archivedStories")
+    public DataResponseMessage<List<StoryDTO>>archivedStories(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
+        return storyService.archivedStories(userDetails.getUsername());
+    }
+    //arşivden kaldırma
 }

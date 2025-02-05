@@ -8,6 +8,8 @@ import bingol.campus.friendRequest.core.response.ReceivedFriendRequestDTO;
 import bingol.campus.friendRequest.core.response.SentFriendRequestDTO;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
+import bingol.campus.student.exceptions.StudentDeletedException;
+import bingol.campus.student.exceptions.StudentNotActiveException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +29,7 @@ public class FriendRequestController {
 
     // Yeni bir arkadaşlık isteği gönder
     @PostMapping("/send/{userId}")
-    public ResponseMessage sendFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long userId) throws SelfFriendRequestException, StudentNotFoundException, AlreadySentRequestException, AlreadyFollowingException, UserBlockedException, BlockedByUserException {
+    public ResponseMessage sendFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long userId) throws SelfFriendRequestException, StudentNotFoundException, AlreadySentRequestException, AlreadyFollowingException, UserBlockedException, BlockedByUserException, StudentDeletedException, StudentNotActiveException {
         return friendRequestService.sendFriendRequest(userDetails.getUsername(),userId);
     }
 
@@ -46,13 +48,13 @@ public class FriendRequestController {
 
     // Arkadaşlık isteğini kabul et
     @PutMapping("/accept/{requestId}")
-    public ResponseMessage acceptFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long requestId) throws AlreadyAcceptedRequestException, FriendRequestNotFoundException, StudentNotFoundException, UnauthorizedRequestException {
+    public ResponseMessage acceptFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long requestId) throws AlreadyAcceptedRequestException, FriendRequestNotFoundException, StudentNotFoundException, UnauthorizedRequestException, StudentDeletedException, StudentNotActiveException {
       return   friendRequestService.acceptFriendRequest(userDetails.getUsername(),requestId);
     }
 
     // Arkadaşlık isteğini reddet
     @PutMapping("/reject/{requestId}")
-    public ResponseMessage rejectFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long requestId) throws FriendRequestNotFoundException, AlreadyRejectedRequestException, StudentNotFoundException {
+    public ResponseMessage rejectFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long requestId) throws FriendRequestNotFoundException, AlreadyRejectedRequestException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
      return    friendRequestService.rejectFriendRequest(userDetails.getUsername(),requestId);
 
     }

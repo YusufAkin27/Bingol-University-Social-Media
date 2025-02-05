@@ -11,6 +11,7 @@ public class StoryDTO {
     private long storyId;
     private String profilePhoto;
     private String username;
+    private long userId;
     private String photo;
     private int score;
 }

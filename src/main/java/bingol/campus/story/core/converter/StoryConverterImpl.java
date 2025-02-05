@@ -69,6 +69,7 @@ public class StoryConverterImpl implements StoryConverter {
         storyDTO.setProfilePhoto(story.getStudent().getProfilePhoto());
         storyDTO.setUsername(story.getStudent().getUsername());
         storyDTO.setStoryId(story.getId());
+        storyDTO.setUserId(story.getStudent().getId());
         return storyDTO;
     }
 

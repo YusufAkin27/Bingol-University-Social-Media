@@ -30,7 +30,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/v1/api/student")
-@CrossOrigin(origins = "http://localhost:5174") // Sadece bu frontend erişebilir
 @RequiredArgsConstructor
 
 public class StudentController {
@@ -41,7 +40,21 @@ public class StudentController {
     public ResponseMessage signUp(@RequestBody CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException {
         return studentService.signUp(createStudentRequest);
     }
+    @PutMapping("/active")
+    public ResponseMessage active(@RequestParam String token){
+        return studentService.active(token);
+    }
 
+
+    @PostMapping("/forgot-password/{username}")
+    public ResponseMessage forgotPassword(@PathVariable String username) throws StudentNotFoundException {
+        return studentService.forgotPassword(username);
+    }
+
+    @PutMapping("/reset-password")
+    public ResponseMessage resetPassword(@RequestParam String token, @RequestParam String newPassword) {
+        return studentService.resetPassword(token, newPassword);
+    }
 
     // Öğrenci profil bilgilerini getirme
     @GetMapping("/profile")

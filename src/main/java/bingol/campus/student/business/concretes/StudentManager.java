@@ -7,6 +7,7 @@ import bingol.campus.friendRequest.business.abstracts.FriendRequestService;
 import bingol.campus.friendRequest.entity.FriendRequest;
 import bingol.campus.friendRequest.core.exceptions.BlockedByUserException;
 import bingol.campus.friendRequest.core.exceptions.UserBlockedException;
+import bingol.campus.mailservice.*;
 import bingol.campus.post.core.converter.PostConverter;
 import bingol.campus.post.core.response.PostDTO;
 import bingol.campus.post.entity.Post;
@@ -50,6 +51,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,6 +67,8 @@ public class StudentManager implements StudentService {
     private final FriendRequestService friendRequestService;
     private final PostRepository postRepository;
     private final PostConverter postConverter;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final MailService mailService;
     private final Cloudinary cloudinary;
     private final StoryViewerRepository storyViewerRepository;
     private final StoryRepository storyRepository;
@@ -75,17 +79,126 @@ public class StudentManager implements StudentService {
     @Transactional
     public ResponseMessage signUp(CreateStudentRequest createStudentRequest) throws DuplicateUsernameException, MissingRequiredFieldException,
             DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidEmailException {
-        // Doğrulama kurallarını çağırın
         studentRules.validate(createStudentRequest);
 
-        // Doğrulamalardan geçen veriyi dönüştürün ve kaydedin
-        Student student = studentConverter.createToStudent(createStudentRequest);
-        studentRepository.save(student);
+        Optional<Student> existingStudent = studentRepository.findByEmail(createStudentRequest.getEmail());
 
+        if (existingStudent.isPresent()) {
+            Student student = existingStudent.get();
+            if (student.getIsActive()) {
+                throw new DuplicateEmailException();
+            } else {
+                Optional<VerificationToken> existingToken = verificationTokenRepository.findByStudentAndType(student, VerificationTokenType.ACCOUNT_ACTIVATION);
+                if (existingToken.isPresent()) {
+                    VerificationToken token = existingToken.get();
+                    if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
+                        String tokenValue = UUID.randomUUID().toString();
+                        token.setToken(tokenValue);
+                        token.setExpiryDate(LocalDateTime.now().plusMinutes(30));
+                        verificationTokenRepository.save(token);
+                        sendActivationEmail(student, tokenValue);
+                        return new ResponseMessage("Aktivasyon e-postası gönderildi.", true);
+                    } else {
+                        return new ResponseMessage("Aktivasyon kodu hala geçerli. Lütfen e-postanızı kontrol edin.", false);
+                    }
+                } else {
+                    String tokenValue = UUID.randomUUID().toString();
+                    VerificationToken newToken = new VerificationToken();
+                    newToken.setStudent(student);
+                    newToken.setToken(tokenValue);
+                    newToken.setType(VerificationTokenType.ACCOUNT_ACTIVATION);
+                    newToken.setExpiryDate(LocalDateTime.now().plusMinutes(30));
+                    verificationTokenRepository.save(newToken);
+                    sendActivationEmail(student, tokenValue);
+                    return new ResponseMessage("Aktivasyon e-postası gönderildi.", true);
+                }
+            }
+        }
 
-        // Başarılı yanıt oluşturun
-        return new ResponseMessage("Kayıt başarılı", true);
+        Student newStudent = studentConverter.createToStudent(createStudentRequest);
+        studentRepository.save(newStudent);
+
+        String token = UUID.randomUUID().toString();
+        VerificationToken verificationToken = new VerificationToken();
+        verificationToken.setStudent(newStudent);
+        verificationToken.setToken(token);
+        verificationToken.setType(VerificationTokenType.ACCOUNT_ACTIVATION);
+        verificationToken.setExpiryDate(LocalDateTime.now().plusMinutes(30));
+
+        verificationTokenRepository.save(verificationToken);
+
+        sendActivationEmail(newStudent, token);
+
+        return new ResponseMessage("Kayıt başarılı. Aktivasyon e-postası gönderildi.", true);
     }
+
+    private void sendActivationEmail(Student student, String token) {
+        String activateLink = "http://localhost:8080/v1/api/student/active?token=" + token;
+
+        String emailContent = "<div style='font-family: Arial, sans-serif; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; max-width: 500px; margin: auto;'>" +
+                "<h2 style='color: #2d89ef;'>BinGoo! Hesap Aktivasyonu</h2>" +
+                "<p>Merhaba <b>" + student.getFirstName() + "</b>,</p>" +
+                "<p>Hesabınızı aktifleştirmek için aşağıdaki butona tıklayın. Bu bağlantı <b>30 dakika</b> boyunca geçerlidir.</p>" +
+                "<a href='" + activateLink + "' style='display: inline-block; padding: 12px 20px; margin: 10px 0; font-size: 16px; color: #fff; background-color: #007bff; text-decoration: none; border-radius: 5px;'>Hesabımı Aktifleştir</a>" +
+                "<p>Eğer bu isteği siz yapmadıysanız, lütfen bu e-postayı dikkate almayın.</p>" +
+                "<hr style='margin-top: 20px;'>" +
+                "<p style='font-size: 12px; color: #888;'>© 2025 BinGoo! Tüm hakları saklıdır.</p>" +
+                "</div>";
+
+        EmailMessage emailMessage = new EmailMessage();
+        emailMessage.setBody(emailContent);
+        emailMessage.setHtml(true);
+        emailMessage.setToEmail(student.getEmail());
+        emailMessage.setSubject("🔑 BinGoo! Hesap Aktivasyonu");
+
+        mailService.queueEmail(emailMessage);
+    }
+
+
+    @Override
+    @Transactional
+    public ResponseMessage active(String token) {
+        Optional<VerificationToken> verificationToken = verificationTokenRepository.findByToken(token);
+
+        if (!verificationToken.isPresent()) {
+            return new ResponseMessage("Geçersiz veya hatalı token.", false);
+        }
+
+        VerificationToken tokenEntity = verificationToken.get();
+        LocalDateTime expiryDate = tokenEntity.getExpiryDate();
+
+        if (expiryDate.isBefore(LocalDateTime.now())) {
+            return new ResponseMessage("Bu aktivasyon linkinin süresi dolmuş.", false);
+        }
+
+        Student student = tokenEntity.getStudent();
+        student.setIsActive(true);
+
+        studentRepository.save(student);
+        verificationTokenRepository.delete(tokenEntity);
+        verificationTokenRepository.flush();
+
+
+        String emailContent = "<div style='font-family: Arial, sans-serif; text-align: center; padding: 20px; border: 1px solid #444; border-radius: 10px; max-width: 500px; margin: auto; background-color: #1e1e1e; color: #f0f0f0;'>" +
+                "<h2 style='color: #2d89ef;'>BinGoo! Hesap Aktivasyonu Tamamlandı</h2>" +
+                "<p>Merhaba <b>" + student.getFirstName() + "</b>,</p>" +
+                "<p>Hesabınız başarıyla aktifleştirildi! Artık BinGoo! uygulamasını kullanabilirsiniz.</p>" +
+                "<hr style='margin-top: 20px; border-color: #444;'>" +
+                "<p style='font-size: 12px; color: #888;'>© 2025 BinGoo! Tüm hakları saklıdır.</p>" +
+                "</div>";
+
+        EmailMessage emailMessage = new EmailMessage();
+        emailMessage.setBody(emailContent);
+        emailMessage.setHtml(true);
+        emailMessage.setToEmail(student.getEmail());
+        emailMessage.setSubject("🎉 BinGoo! Hesap Aktivasyonu Tamamlandı");
+
+        mailService.queueEmail(emailMessage);
+
+        return new ResponseMessage("Hesabınız başarıyla aktifleştirildi. E-posta ile bilgilendirildiniz.", true);
+    }
+
+
 
 
     public Student findBySchoolNumber(String schoolNumber) throws StudentNotFoundException {
@@ -778,6 +891,104 @@ public class StudentManager implements StudentService {
         student.setFcmToken(fcmToken);
         studentRepository.save(student);
         return new ResponseMessage("başarılı", true);
+    }
+
+    @Override
+    @Transactional
+    public ResponseMessage forgotPassword(String username) throws StudentNotFoundException {
+        Student student = studentRepository.getByUsernameOrEmail(username);
+
+        Optional<VerificationToken> existingToken = verificationTokenRepository.findByStudentAndType(
+                student, VerificationTokenType.PASSWORD_RESET);
+
+        if (existingToken.isPresent()) {
+            return new ResponseMessage("Zaten aktif bir şifre sıfırlama bağlantınız var. Lütfen e-postanızı kontrol edin.", false);
+        }
+
+        String resetToken = UUID.randomUUID().toString();
+
+        VerificationToken verificationToken = new VerificationToken();
+        verificationToken.setStudent(student);
+        verificationToken.setToken(resetToken);
+        verificationToken.setType(VerificationTokenType.PASSWORD_RESET);
+        verificationToken.setExpiryDate(LocalDateTime.now().plusMinutes(30));
+
+        verificationTokenRepository.save(verificationToken);
+
+        String resetLink = "http://localhost:8080/v1/api/student/reset-password?token=" + resetToken + "&newPassword";
+
+        String emailContent = "<div style='font-family: Arial, sans-serif; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; max-width: 500px; margin: auto;'>" +
+                "<h2 style='color: #2d89ef;'>BinGoo! Şifre Sıfırlama</h2>" +
+                "<p>Merhaba <b>" + student.getFirstName() + "</b>,</p>" +
+                "<p>Şifrenizi sıfırlamak için aşağıdaki butona tıklayın. Bu bağlantı <b>30 dakika</b> boyunca geçerlidir.</p>" +
+                "<a href='" + resetLink + "' style='display: inline-block; padding: 12px 20px; margin: 10px 0; font-size: 16px; color: #fff; background-color: #007bff; text-decoration: none; border-radius: 5px;'>Şifremi Sıfırla</a>" +
+                "<p>Eğer bu isteği siz yapmadıysanız, lütfen bu e-postayı dikkate almayın.</p>" +
+                "<hr style='margin-top: 20px;'>" +
+                "<p style='font-size: 12px; color: #888;'>© 2025 BinGoo! Tüm hakları saklıdır.</p>" +
+                "</div>";
+
+        EmailMessage emailMessage = new EmailMessage();
+        emailMessage.setBody(emailContent);
+        emailMessage.setHtml(true);
+        emailMessage.setToEmail(student.getEmail());
+        emailMessage.setSubject("🔑 BinGoo! Şifre Sıfırlama Bağlantısı");
+
+        mailService.queueEmail(emailMessage);
+
+        return new ResponseMessage("Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.", true);
+    }
+
+
+    @Override
+    @Transactional
+    public ResponseMessage resetPassword(String token, String newPassword) {
+        Optional<VerificationToken> optionalToken = verificationTokenRepository.findByToken(token);
+
+        // Token kontrolü
+        if (optionalToken.isEmpty()) {
+            return new ResponseMessage("⚠ Geçersiz veya bulunamayan şifre sıfırlama bağlantısı!", false);
+        }
+
+        VerificationToken verificationToken = optionalToken.get();
+
+        if (!verificationToken.getType().equals(VerificationTokenType.PASSWORD_RESET)) {
+            return new ResponseMessage("Bu bir şifre sıfırlama bağlantısı değil", true);
+        }
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            return new ResponseMessage("Şifre sıfırlama bağlantısının süresi dolmuş! Lütfen tekrar deneyin.", false);
+        }
+
+        Student student = verificationToken.getStudent();
+
+        if (student.getPassword().equals(newPassword)) {
+            return new ResponseMessage("Eski şifre ile yeni şifre aynı olamaz", true);
+        }
+
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        student.setPassword(encodedPassword);
+        studentRepository.save(student);
+
+        verificationTokenRepository.delete(verificationToken);
+        String emailContent = "<div style='font-family: Arial, sans-serif; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; max-width: 500px; margin: auto;'>" +
+                "<h2 style='color: #2d89ef;'>🔐 Şifreniz Güncellendi!</h2>" +
+                "<p>Merhaba <b>" + student.getFirstName() + "</b>,</p>" +
+                "<p>Şifreniz başarıyla güncellendi. Artık yeni şifreniz ile giriş yapabilirsiniz.</p>" +
+                "<p>Eğer bu işlemi siz gerçekleştirmediyseniz, lütfen hemen bizimle iletişime geçin.</p>" +
+                "<hr style='margin-top: 20px;'>" +
+                "<p style='font-size: 12px; color: #888;'>© 2025 BinGoo! Tüm hakları saklıdır.</p>" +
+                "</div>";
+
+        EmailMessage emailMessage = new EmailMessage();
+        emailMessage.setBody(emailContent);
+        emailMessage.setHtml(true);
+        emailMessage.setToEmail(student.getEmail());
+        emailMessage.setSubject("🔑 BinGoo! Şifre Güncelleme Başarılı");
+
+        mailService.queueEmail(emailMessage);
+
+
+        return new ResponseMessage("✅ Şifreniz başarıyla güncellendi. Artık yeni şifreniz ile giriş yapabilirsiniz.", true);
     }
 
 

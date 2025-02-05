@@ -27,8 +27,6 @@ public class StudentConverterImpl implements StudentConverter {
     private final PostConverter postConverter;
 
 
-
-
     @Override
     public Student createToStudent(CreateStudentRequest createStudentRequest) {
 
@@ -47,7 +45,7 @@ public class StudentConverterImpl implements StudentConverter {
         student.setGrade(createStudentRequest.getGrade()); // Sınıfı alıyoruz
         student.setProfilePhoto("https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg");
         student.setMobilePhone(createStudentRequest.getMobilePhone()); // Telefonu alıyoruz
-        student.setIsActive(true); // Varsayılan olarak aktif
+        student.setIsActive(false);
         student.setUsername(createStudentRequest.getUsername());
         student.setLastName(createStudentRequest.getLastName()); // Soyadı alıyoruz
         return student;
@@ -118,7 +116,7 @@ public class StudentConverterImpl implements StudentConverter {
 
         storyDTO.setUsername(story.getStudent().getUsername());
         storyDTO.setProfilePhoto(story.getStudent().getProfilePhoto());
-
+        storyDTO.setUserId(story.getStudent().getId());
         storyDTO.setPhoto(story.getPhoto());
         storyDTO.setStoryId(story.getId());
 

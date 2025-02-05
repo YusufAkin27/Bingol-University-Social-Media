@@ -6,21 +6,18 @@ import bingol.campus.followRelation.core.exceptions.UnauthorizedAccessException;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.core.response.SearchAccountDTO;
+import bingol.campus.student.exceptions.StudentDeletedException;
+import bingol.campus.student.exceptions.StudentNotActiveException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 public interface FollowRelationService {
-    
 
-    
+    ResponseMessage deleteFollowing(String username, Long userId) throws StudentNotFoundException, FollowRelationNotFoundException, StudentDeletedException, StudentNotActiveException;
 
-    ResponseMessage deleteFollowing(String username, Long userId) throws StudentNotFoundException, FollowRelationNotFoundException;
-
-    ResponseMessage deleteFollower(String username, Long userId) throws StudentNotFoundException, FollowRelationNotFoundException;
-
-
+    ResponseMessage deleteFollower(String username, Long userId) throws StudentNotFoundException, FollowRelationNotFoundException, StudentDeletedException, StudentNotActiveException;
 
     ResponseMessage getFollowersCount(String username) throws StudentNotFoundException;
 

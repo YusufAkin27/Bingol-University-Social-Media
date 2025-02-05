@@ -264,32 +264,42 @@ public class PostManager implements PostService {
 
     @Override
     @Transactional
-    public ResponseMessage delete(String username, Long postId) throws PostNotFoundForUserException, UserNotFoundException, PostAlreadyDeleteException, PostAlreadyNotActiveException, StudentNotFoundException {
-        // Kullanıcıyı al
+    public ResponseMessage delete(String username, Long postId)
+            throws PostNotFoundForUserException, UserNotFoundException,
+            PostAlreadyDeleteException, PostAlreadyNotActiveException,
+            StudentNotFoundException {
+
         Student student = studentRepository.getByUserNumber(username);
 
-        // 1. Gönderiyi doğrula
-        Post post = student.getPost().stream()
-                .filter(p -> p.getId().equals(postId))
-                .findFirst()
+        Post post = postRepository.findById(postId)
                 .orElseThrow(PostNotFoundForUserException::new);
 
-        // 2. Gönderinin zaten silinmiş olup olmadığını kontrol et
+        if (!post.getStudent().equals(student)) {
+            throw new PostNotFoundForUserException();
+        }
+
         if (Boolean.TRUE.equals(post.isDelete())) {
             throw new PostAlreadyDeleteException();
         }
 
-        // 3. Gönderinin aktif olup olmadığını kontrol et
         if (!post.isActive()) {
             throw new PostAlreadyNotActiveException();
         }
 
-        // 4. Gönderiyi sil
+        if (student.getArchivedPosts() == null) {
+            student.setArchivedPosts(new ArrayList<>());
+        }
+
+        student.getArchivedPosts().add(post);
+        student.getPost().remove(post);
+
         post.setDelete(true);
         post.setActive(false);
-        postRepository.save(post); // Değişiklikleri kaydet
 
-        return new ResponseMessage("Gönderi başarıyla kaldırıldı: Gönderiniz başarıyla silindi.", true);
+        postRepository.save(post);
+        studentRepository.save(student);
+
+        return new ResponseMessage("Gönderi başarıyla arşive alındı.", true);
     }
 
 
@@ -479,6 +489,13 @@ public class PostManager implements PostService {
         Page<Comment> comments = commentRepository.findByStory(story, pageRequest);
         List<CommentDetailsDTO> commentDetailsDTOS = comments.stream().filter(c -> c.getStudent().getIsActive()).map(commentConverter::toDetails).toList();
         return new DataResponseMessage<>("hikaye yorumları ", true, commentDetailsDTOS);
+    }
+
+    @Override
+    public DataResponseMessage<List<PostDTO>> archivedPosts(String username) throws StudentNotFoundException {
+        Student student=studentRepository.getByUserNumber(username);
+        List<PostDTO>postDTOS=student.getArchivedPosts().stream().map(postConverter::toDto).toList();
+        return new DataResponseMessage<>("arşiv",true,postDTOS);
     }
 
 

@@ -8,6 +8,8 @@ import bingol.campus.followRelation.entity.FollowRelation;
 import bingol.campus.followRelation.repository.FollowRelationRepository;
 import bingol.campus.friendRequest.core.converter.FriendRequestConverter;
 import bingol.campus.friendRequest.core.response.FollowedUserDTO;
+import bingol.campus.log.business.abstracts.LogService;
+import bingol.campus.log.core.request.CreateLogRequest;
 import bingol.campus.post.core.converter.PostConverter;
 import bingol.campus.post.core.response.PostDTO;
 import bingol.campus.response.DataResponseMessage;
@@ -15,6 +17,8 @@ import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.core.converter.StudentConverter;
 import bingol.campus.student.core.response.SearchAccountDTO;
 import bingol.campus.student.entity.Student;
+import bingol.campus.student.exceptions.StudentDeletedException;
+import bingol.campus.student.exceptions.StudentNotActiveException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import bingol.campus.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +39,7 @@ public class FollowRelationManager implements FollowRelationService {
     private final FriendRequestConverter friendRequestConverter;
     private final PostConverter postConverter;
     private final StudentConverter studentConverter;
+    private final LogService logService;
 
     @Override
     public DataResponseMessage getFollowing(String username, Pageable pageable) throws StudentNotFoundException {
@@ -90,7 +95,7 @@ public class FollowRelationManager implements FollowRelationService {
 
     @Override
     @Transactional
-    public ResponseMessage deleteFollowing(String username, Long userId) throws FollowRelationNotFoundException, StudentNotFoundException {
+    public ResponseMessage deleteFollowing(String username, Long userId) throws FollowRelationNotFoundException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
         // Öğrenci kontrolü
         Student student = studentRepository.getByUserNumber(username);
         if (student == null) {
@@ -109,12 +114,17 @@ public class FollowRelationManager implements FollowRelationService {
         studentRepository.save(student);
         followRelationRepository.delete(followRelation);
 
+        CreateLogRequest createLogRequest = new CreateLogRequest();
+        createLogRequest.setMessage(student.getUsername() + " seni takipten çıkardı.");
+        createLogRequest.setStudentId(followRelation.getFollowed().getId());
+        logService.addLog(createLogRequest);
+
         return new ResponseMessage("Takip edilen kullanıcı başarıyla çıkarıldı.", true);
     }
 
     @Override
     @Transactional
-    public ResponseMessage deleteFollower(String username, Long userId) throws StudentNotFoundException, FollowRelationNotFoundException {
+    public ResponseMessage deleteFollower(String username, Long userId) throws StudentNotFoundException, FollowRelationNotFoundException, StudentDeletedException, StudentNotActiveException {
         // Öğrenci kontrolü
         Student student = studentRepository.getByUserNumber(username);
         if (student == null) {
@@ -132,6 +142,11 @@ public class FollowRelationManager implements FollowRelationService {
         student.getFollowers().remove(followRelation);
         studentRepository.save(student);
         followRelationRepository.delete(followRelation);
+
+        CreateLogRequest createLogRequest = new CreateLogRequest();
+        createLogRequest.setMessage(student.getUsername() + " seni takipçilerinden çıkardı.");
+        createLogRequest.setStudentId(followRelation.getFollower().getId());
+        logService.addLog(createLogRequest);
 
         return new ResponseMessage("Takipçi başarıyla çıkarıldı.", true);
     }

@@ -11,11 +11,15 @@ import bingol.campus.friendRequest.entity.enums.RequestStatus;
 import bingol.campus.friendRequest.repository.FriendRequestRepository;
 import bingol.campus.friendRequest.core.response.ReceivedFriendRequestDTO;
 import bingol.campus.friendRequest.core.response.SentFriendRequestDTO;
+import bingol.campus.log.business.abstracts.LogService;
+import bingol.campus.log.core.request.CreateLogRequest;
 import bingol.campus.notification.NotificationController;
 import bingol.campus.notification.SendNotificationRequest;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.entity.Student;
+import bingol.campus.student.exceptions.StudentDeletedException;
+import bingol.campus.student.exceptions.StudentNotActiveException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import bingol.campus.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,10 +43,11 @@ public class FriendRequestManager implements FriendRequestService {
     private final FollowRelationRepository followRelationRepository;
     private final FriendRequestConverter friendRequestConverter;
     private final NotificationController notificationController;
+    private final LogService logService;
 
     @Override
     @Transactional
-    public ResponseMessage sendFriendRequest(String username, Long userId) throws StudentNotFoundException, SelfFriendRequestException, AlreadySentRequestException, AlreadyFollowingException, BlockedByUserException, UserBlockedException {
+    public ResponseMessage sendFriendRequest(String username, Long userId) throws StudentNotFoundException, SelfFriendRequestException, AlreadySentRequestException, AlreadyFollowingException, BlockedByUserException, UserBlockedException, StudentDeletedException, StudentNotActiveException {
         // Gönderen ve alıcıyı veritabanından al
         Student gönderen = studentRepository.getByUserNumber(username);
         Student alıcı = findById(userId);
@@ -97,6 +102,12 @@ public class FriendRequestManager implements FriendRequestService {
             alıcı.getReceiverRequest().add(friendRequest);
             gönderen.getSentRequest().add(friendRequest);
             friendRequestRepository.save(friendRequest);
+            CreateLogRequest createLogRequest=new CreateLogRequest();
+            createLogRequest.setMessage(gönderen.getUsername()+" den istek geldi");
+            createLogRequest.setStudentId(alıcı.getId());
+            logService.addLog(createLogRequest);
+
+
             if (alıcı.getFcmToken() != null) {
                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                 sendNotificationRequest.setTitle("İstek Geldi!!");
@@ -198,7 +209,7 @@ public class FriendRequestManager implements FriendRequestService {
     @Transactional
     public ResponseMessage acceptFriendRequest(String username, Long requestId)
             throws AlreadyAcceptedRequestException, FriendRequestNotFoundException,
-            StudentNotFoundException, UnauthorizedRequestException {
+            StudentNotFoundException, UnauthorizedRequestException, StudentDeletedException, StudentNotActiveException {
 
         // Alıcıyı (isteği kabul eden kullanıcıyı) bul
         Student followed = studentRepository.getByUserNumber(username);
@@ -241,6 +252,11 @@ public class FriendRequestManager implements FriendRequestService {
         studentRepository.save(follower);
         studentRepository.save(followed);
 
+        CreateLogRequest createLogRequest = new CreateLogRequest();
+        createLogRequest.setMessage(follower.getUsername() + " seni takip etmeye başladı.");
+        createLogRequest.setStudentId(followed.getId());
+        logService.addLog(createLogRequest);
+
         if (followed.getFcmToken() != null) {
             SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
             sendNotificationRequest.setTitle("Arkadaşlık İsteği Kabul Edildi");
@@ -263,7 +279,7 @@ public class FriendRequestManager implements FriendRequestService {
 
     @Override
     @Transactional
-    public ResponseMessage rejectFriendRequest(String username, Long requestId) throws AlreadyRejectedRequestException, FriendRequestNotFoundException, StudentNotFoundException {
+    public ResponseMessage rejectFriendRequest(String username, Long requestId) throws AlreadyRejectedRequestException, FriendRequestNotFoundException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
         // Alıcıyı bul
         Student student = studentRepository.getByUserNumber(username);
 
@@ -294,6 +310,11 @@ public class FriendRequestManager implements FriendRequestService {
         // Liste değişikliklerini veritabanına kaydet
         studentRepository.save(student);
         friendRequestRepository.save(friendRequest);  // Yalnızca durumu güncelle ve kaydet, silme işlemi yapma
+
+        CreateLogRequest createLogRequest = new CreateLogRequest();
+        createLogRequest.setMessage(student.getUsername() + " senin takip isteğini reddetti.");
+        createLogRequest.setStudentId(gönderen.getId());
+        logService.addLog(createLogRequest);
 
         return new ResponseMessage("Arkadaşlık isteği başarıyla reddedildi.", true);
     }

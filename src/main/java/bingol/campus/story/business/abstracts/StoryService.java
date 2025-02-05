@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 public interface StoryService {
-    ResponseMessage add(String username, MultipartFile photos) throws StudentNotFoundException, IOException;
+    ResponseMessage add(String username, MultipartFile file) throws StudentNotFoundException, IOException;
 
     ResponseMessage delete(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, OwnerStoryException;
 
@@ -60,4 +60,5 @@ public interface StoryService {
 
     DataResponseMessage<List<FeatureStoryDTO>> getMyFeaturedStories(String username) throws StudentNotFoundException;
 
+    DataResponseMessage<List<StoryDTO>> archivedStories(String username) throws StudentNotFoundException;
 }

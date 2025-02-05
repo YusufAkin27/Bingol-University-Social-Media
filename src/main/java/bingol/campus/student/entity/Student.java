@@ -7,13 +7,16 @@ import bingol.campus.comment.entity.Comment;
 import bingol.campus.followRelation.entity.FollowRelation;
 import bingol.campus.friendRequest.entity.FriendRequest;
 import bingol.campus.like.entity.Like;
+import bingol.campus.log.entity.Log;
+import bingol.campus.mailservice.VerificationToken;
+
+import bingol.campus.mailservice.VerificationTokenType;
 import bingol.campus.post.entity.Post;
 import bingol.campus.story.entity.FeaturedStory;
 import bingol.campus.story.entity.Story;
 import bingol.campus.student.entity.enums.Department;
 import bingol.campus.student.entity.enums.Faculty;
 import bingol.campus.student.entity.enums.Grade;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import bingol.campus.security.entity.User;
@@ -21,86 +24,84 @@ import bingol.campus.security.entity.User;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, exclude = {"followers", "following", "blocked", "receiverRequest", "sentRequest", "post", "stories", "likes", "comments", "chatParticipants", "messages", "mediaFiles"})
-@ToString(exclude = {"followers", "following", "blocked", "receiverRequest", "sentRequest", "post", "stories", "likes", "comments", "chatParticipants", "messages", "mediaFiles"})
-@Table(name = "students") // Öğrenci için ayrı tablo
+@EqualsAndHashCode(callSuper = true, exclude = {"followers", "following", "blocked", "receiverRequest", "sentRequest", "post", "stories", "likes", "comments", "chatParticipants", "messages", "mediaFiles", "logs"})
+@ToString(exclude = {"followers", "following", "blocked", "receiverRequest", "sentRequest", "post", "stories", "likes", "comments", "chatParticipants", "messages", "mediaFiles", "logs"})
+@Table(name = "students")
 public class Student extends User {
 
-
     private String firstName;
-
     private String lastName;
-
     private String email;
-
     private String mobilePhone;
-
     private String username;
 
     @Enumerated(EnumType.STRING)
-    private Department department; // Bölüm
+    private Department department;
 
     @Enumerated(EnumType.STRING)
-    private Faculty faculty; // Fakülte
+    private Faculty faculty;
 
     @Enumerated(EnumType.STRING)
-    private Grade grade; // Sınıf (1, 2, 3, 4)
+    private Grade grade;
 
-    private LocalDate birthDate; // Doğum Tarihi
+    private LocalDate birthDate;
+    private String profilePhoto;
+    private Boolean gender;
+    private Boolean isActive ;
+    private Boolean isDeleted ;
 
-    private String profilePhoto; // Profil Fotoğrafı (Dosya Yolu veya URL)
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<VerificationToken> verificationTokens=new ArrayList<>();
 
-    private Boolean gender; // Cinsiyet (true: Erkek, false: Kadın)
-
-    private Boolean isActive = true; // Aktiflik Durumu
-
-    private Boolean isDeleted = false; // Silinmiş Durumu
-
-
-    // sosyal medya için gerekli alanlar
-    private boolean isPrivate;  //profil gizli mi
+    private boolean isPrivate;
     private String bio;
     private int popularityScore;
 
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "followed", fetch = FetchType.LAZY)
-    private List<FollowRelation> followers = new ArrayList<>(); // Beni takip edenlerin ilişkisi
+    private List<FollowRelation> followers = new ArrayList<>();
 
-    // Takip ettiklerim
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "follower", fetch = FetchType.LAZY)
-    private List<FollowRelation> following = new ArrayList<>(); // Benim takip ettiklerim
+    private List<FollowRelation> following = new ArrayList<>();
 
-    // Engellenenler ilişkisi
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "blocker", fetch = FetchType.LAZY)
     private List<BlockRelation> blocked = new ArrayList<>();
 
-    // Arkadaşlık istekleri
     @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<FriendRequest> receiverRequest = new ArrayList<>(); // Alıcı olarak gelen istekler
+    private List<FriendRequest> receiverRequest = new ArrayList<>();
 
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<FriendRequest> sentRequest = new ArrayList<>(); // Gönderen olarak yapılan istekler
+    private List<FriendRequest> sentRequest = new ArrayList<>();
 
-
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Post> post = new ArrayList<>();
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Story> stories = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<FeaturedStory> featuredStories = new ArrayList<>(); // Kullanıcının öne çıkarılan hikaye grupları
-
+    private List<FeaturedStory> featuredStories = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Like> likes = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Story> archivedStories = new ArrayList<>();
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Post> archivedPosts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Log> logs = new ArrayList<>();
+
+
+
 /*
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -114,6 +115,7 @@ public class Student extends User {
     private List<ChatMedia> mediaFiles = new ArrayList<>(); // Kullanıcının gönderdiği medya dosyaları
 
  */
+
 
 
 

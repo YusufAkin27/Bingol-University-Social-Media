@@ -7,6 +7,8 @@ import bingol.campus.followRelation.core.exceptions.UnauthorizedAccessException;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.core.response.SearchAccountDTO;
+import bingol.campus.student.exceptions.StudentDeletedException;
+import bingol.campus.student.exceptions.StudentNotActiveException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -38,13 +40,13 @@ public class FollowRelationController {
 
     // Takip edilen birini sil
     @DeleteMapping("/following/{userId}")
-    public ResponseMessage removeFollowing(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long userId) throws StudentNotFoundException, FollowRelationNotFoundException {
+    public ResponseMessage removeFollowing(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long userId) throws StudentNotFoundException, FollowRelationNotFoundException, StudentDeletedException, StudentNotActiveException {
         return followRelationService.deleteFollowing(userDetails.getUsername(), userId);
     }
 
     // Takipçi birini sil
     @DeleteMapping("/followers/{userId}")
-    public ResponseMessage removeFollower(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long userId) throws StudentNotFoundException, FollowRelationNotFoundException {
+    public ResponseMessage removeFollower(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long userId) throws StudentNotFoundException, FollowRelationNotFoundException, StudentDeletedException, StudentNotActiveException {
         return followRelationService.deleteFollower(userDetails.getUsername(), userId);
     }
 

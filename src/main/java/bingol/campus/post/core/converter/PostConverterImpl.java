@@ -22,12 +22,14 @@ public class PostConverterImpl implements PostConverter {
                 .like(post.getLikes().size())
                 .comment(post.getComments().size())
                 .popularityScore(post.getPopularityScore())
+                .profilePhoto(post.getStudent().getProfilePhoto())
                 .content(post.getPhotos())
                 .createdAt(LocalDateTime.now())
                 .description(post.getDescription())
                 .tagAPerson(post.getTaggedPersons().stream().map(Student::getUsername).toList())
                 .location(post.getLocation())
                 .username(post.getStudent().getUsername())
+                .userId(post.getStudent().getId())
                 .build();
 
     }

@@ -9,6 +9,7 @@ import bingol.campus.notification.NotificationController;
 import bingol.campus.notification.SendBulkNotificationRequest;
 import bingol.campus.post.core.response.CommentDetailsDTO;
 import bingol.campus.post.core.response.LikeDetailsDTO;
+import bingol.campus.post.core.response.PostDTO;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 
@@ -62,7 +63,7 @@ public class StoryManager implements StoryService {
 
     @Override
     @Transactional
-    public ResponseMessage add(String username, MultipartFile photos) throws StudentNotFoundException, IOException {
+    public ResponseMessage add(String username, MultipartFile file) throws StudentNotFoundException, IOException {
         Student student = studentRepository.getByUserNumber(username);
         if (student == null) {
             throw new StudentNotFoundException();
@@ -76,33 +77,43 @@ public class StoryManager implements StoryService {
         story.setExpiresAt(LocalDateTime.now().plusDays(1));
         story.setStudent(student);
 
-        if (photos != null && !photos.isEmpty()) {
-            String contentType = photos.getContentType();
+        if (file != null && !file.isEmpty()) {
+            String contentType = file.getContentType();
 
-            if (contentType == null ||
-                    (!contentType.equals("image/jpeg") &&
-                            !contentType.equals("image/png"))) {
-                return new ResponseMessage("Yalnızca JPEG ve PNG formatındaki dosyalar kabul edilir.", false);
+            if (contentType == null) {
+                return new ResponseMessage("Geçersiz dosya formatı.", false);
             }
 
-            long maxFileSize = 10 * 1024 * 1024; // 10MB
-            if (photos.getSize() > maxFileSize) {
-                return new ResponseMessage("Dosya boyutu 10MB'yi geçemez.", false);
+            long maxFileSize = 50 * 1024 * 1024; // 50MB (Videolar için artırıldı)
+
+            if (file.getSize() > maxFileSize) {
+                return new ResponseMessage("Dosya boyutu 50MB'yi geçemez.", false);
             }
 
+            Map<String, Object> uploadParams = ObjectUtils.emptyMap();
+            Map uploadResult;
 
-            Map<String, Object> uploadParams = ObjectUtils.emptyMap(); // Parametreler olmadan doğrudan yükle
-
-            Map uploadResult = cloudinary.uploader().upload(photos.getBytes(), uploadParams);
-            String photoUrl = (String) uploadResult.get("secure_url");
-
-            story.setPhoto(photoUrl);
+            if (contentType.startsWith("image/")) {
+                if (!contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
+                    return new ResponseMessage("Yalnızca JPEG ve PNG formatındaki resimler kabul edilir.", false);
+                }
+                uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+                story.setPhoto((String) uploadResult.get("secure_url"));
+            } else if (contentType.startsWith("video/")) {
+                if (!contentType.equals("video/mp4") && !contentType.equals("video/quicktime")) {
+                    return new ResponseMessage("Yalnızca MP4 ve QuickTime formatındaki videolar kabul edilir.", false);
+                }
+                uploadParams = ObjectUtils.asMap("resource_type", "video");
+                uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+                story.setPhoto((String) uploadResult.get("secure_url"));
+            } else {
+                return new ResponseMessage("Sadece resim veya video yükleyebilirsiniz.", false);
+            }
         }
 
         student.getStories().add(story);
         storyRepository.save(story);
         studentRepository.save(student);
-
 
         List<String> fcmTokens = student.getFollowers().stream()
                 .filter(f -> f.getFollowed().getFcmToken() != null && f.getFollowed().getIsActive())
@@ -130,14 +141,18 @@ public class StoryManager implements StoryService {
 
     @Override
     @Transactional
-    public ResponseMessage delete(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, OwnerStoryException {
+    public ResponseMessage delete(String username, Long storyId)
+            throws StoryNotFoundException, StudentNotFoundException, OwnerStoryException {
         Student student = studentRepository.getByUserNumber(username);
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
-        student.getStories().stream().filter(story1 -> story1.equals(story)).findFirst().orElseThrow(OwnerStoryException::new);
-        student.getStories().removeIf(s -> s.getId().equals(storyId));
-        storyRepository.delete(story);
+
+        if (!student.getStories().contains(story)) {
+            throw new OwnerStoryException();
+        }
+        student.getStories().remove(story);
+        student.getArchivedStories().add(story);
         studentRepository.save(student);
-        return new ResponseMessage("hikaye kaldırıldı", true);
+        return new ResponseMessage("Hikaye arşive alındı.", true);
     }
 
     @Override
@@ -222,6 +237,13 @@ public class StoryManager implements StoryService {
         Student student = studentRepository.getByUserNumber(username);
         List<FeatureStoryDTO> featureStoryDTOS = student.getFeaturedStories().stream().map(storyConverter::toFeatureStoryDto).toList();
         return new DataResponseMessage<>("başarılı", true, featureStoryDTOS);
+    }
+
+    @Override
+    public DataResponseMessage<List<StoryDTO>> archivedStories(String username) throws StudentNotFoundException {
+        Student student=studentRepository.getByUserNumber(username);
+        List<StoryDTO>storyDTOS=student.getArchivedStories().stream().map(storyConverter::toDto).toList();
+        return new DataResponseMessage<>("arşiv",true,storyDTOS);
     }
 
     private void accessStory(Student student, Student student1) throws BlockingBetweenStudent, StudentProfilePrivateException {

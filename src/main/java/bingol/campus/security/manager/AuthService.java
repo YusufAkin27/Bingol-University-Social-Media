@@ -2,6 +2,7 @@ package bingol.campus.security.manager;
 
 
 
+import bingol.campus.response.ResponseMessage;
 import bingol.campus.security.dto.LoginRequestDTO;
 import bingol.campus.security.dto.TokenResponseDTO;
 import bingol.campus.security.dto.UpdateAccessTokenRequestDTO;
@@ -15,4 +16,5 @@ public interface AuthService {
 
     ResponseEntity<?> updateAccessToken(UpdateAccessTokenRequestDTO updateAccessTokenRequestDTO) throws TokenIsExpiredException, TokenNotFoundException;
 
+    ResponseMessage logout(String username) throws UserNotFoundException;
 }

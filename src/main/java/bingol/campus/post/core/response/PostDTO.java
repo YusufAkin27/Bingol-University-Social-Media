@@ -15,8 +15,10 @@ import java.util.List;
 @Builder
 public class PostDTO {
     private long postId;
+    private long userId;
     private String username;
     private List<String> content;
+    private String profilePhoto;
     private String description;
     private List<String>tagAPerson;
     private String location;

@@ -46,7 +46,7 @@ public class StudentRules {
     // Email kontrolü (format ve benzersizlik)
     public void validateEmail(String email) throws InvalidEmailException, DuplicateEmailException {
         // E-posta doğrulama: Genel format kontrolü ve bingol.edu.tr ile bitiş kontrolü
-        if (email == null || !email.matches("^[\\w-\\.]+@bingol\\.edu\\.tr$")) {
+        if (email == null || !email.matches("^[\\w-\\.]+@gmail.com")) {
             throw new InvalidEmailException();
         }
         // Benzersizlik kontrolü
