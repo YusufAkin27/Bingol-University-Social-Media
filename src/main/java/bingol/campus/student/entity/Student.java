@@ -21,6 +21,7 @@ import lombok.*;
 import bingol.campus.security.entity.User;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 @Entity
@@ -47,7 +48,7 @@ public class Student extends User {
     @Enumerated(EnumType.STRING)
     private Grade grade;
 
-    private LocalDate birthDate;
+    private LocalDateTime birthDate;
     private String profilePhoto;
     private Boolean gender;
     private Boolean isActive ;
@@ -101,6 +102,8 @@ public class Student extends User {
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Log> logs = new ArrayList<>();
+    // enum rozetler
+    //Zaman Bazlı İçerik Temaları: Belirli dönemlerde (mevsim, tatil vb.) veya kullanıcının ilgi alanına göre otomatik değişen tema ve arayüz seçenekleri.
 
 
 

@@ -25,18 +25,18 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface StudentService {
-    ResponseMessage signUp(CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException;
+    ResponseMessage signUp(CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException, InvalidUsernameException;
 
     DataResponseMessage<StudentDTO> getStudentProfile(String username) throws StudentNotFoundException;
 
-    ResponseMessage updateStudentProfile(String username, UpdateStudentProfileRequest updateRequest) throws StudentNotFoundException, StudentDeletedException, StudentNotActiveException;
+    ResponseMessage updateStudentProfile(String username, UpdateStudentProfileRequest updateRequest) throws StudentNotFoundException, StudentDeletedException, StudentNotActiveException, DuplicateUsernameException, DuplicateMobilePhoneException, InvalidMobilePhoneException, InvalidUsernameException;
 
     ResponseMessage uploadProfilePhoto(String username, MultipartFile file) throws StudentNotFoundException, IOException, StudentDeletedException, StudentNotActiveException;
 
 
     ResponseMessage deleteStudent(String username) throws StudentNotFoundException, StudentAlreadyIsActiveException;
 
-    ResponseMessage updatePassword(String username, String newPassword) throws StudentNotFoundException, StudentInactiveException, SamePasswordException, StudentDeletedException, StudentNotActiveException;
+    ResponseMessage updatePassword(String username, String newPassword) throws StudentNotFoundException, StudentInactiveException, SamePasswordException, StudentDeletedException, StudentNotActiveException, IllegalPasswordException;
 
     ResponseMessage updateStudentStatus(String username, Boolean isActive) throws StudentNotFoundException, StudentStatusAlreadySetException;
 
@@ -83,4 +83,7 @@ public interface StudentService {
     ResponseMessage resetPassword(String token, String newPassword);
 
     ResponseMessage active(String token);
+
+    DataResponseMessage<List<String >> getSuggestedConnections(String username) throws StudentNotFoundException;
+
 }

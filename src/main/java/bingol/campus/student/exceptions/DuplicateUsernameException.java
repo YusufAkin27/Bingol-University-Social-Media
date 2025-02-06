@@ -4,6 +4,6 @@ import bingol.campus.security.exception.BusinessException;
 
 public class DuplicateUsernameException extends BusinessException {
     public DuplicateUsernameException( ) {
-        super("Aynı kullanıcı adında başka bir öğrenci var");
+        super("Bu kullanıcı adı zaten alınmış.");
     }
 }

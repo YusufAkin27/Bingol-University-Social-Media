@@ -7,6 +7,7 @@ import bingol.campus.student.entity.enums.Grade;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -22,7 +23,7 @@ public class CreateStudentRequest {
     private Department department; // Bölüm
     private Faculty faculty; // Fakülte
     private Grade grade; // Sınıf
-    private LocalDate birthDate; // Doğum Tarihi
+    private LocalDateTime birthDate; // Doğum Tarihi
     private Boolean gender; // Cinsiyet (true: Erkek, false: Kadın)
 
 

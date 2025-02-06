@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -21,7 +22,7 @@ public class StudentDTO {
     private String username;            // Kullanıcı adı
     private String email;               // E-posta adresi
     private String mobilePhone;         // Telefon numarası
-    private LocalDate birthDate;        // Doğum tarihi
+    private LocalDateTime birthDate;        // Doğum tarihi
     private Boolean gender;             // Cinsiyet (true: Erkek, false: Kadın)
     private Faculty faculty;            // Fakülte
     private Department department;      // Bölüm

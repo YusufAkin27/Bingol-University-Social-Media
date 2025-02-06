@@ -37,11 +37,12 @@ public class StudentController {
 
     // Öğrenci kayıt olma
     @PostMapping("/sign-up")
-    public ResponseMessage signUp(@RequestBody CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException {
+    public ResponseMessage signUp(@RequestBody CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException, InvalidUsernameException {
         return studentService.signUp(createStudentRequest);
     }
+
     @PutMapping("/active")
-    public ResponseMessage active(@RequestParam String token){
+    public ResponseMessage active(@RequestParam String token) {
         return studentService.active(token);
     }
 
@@ -65,7 +66,7 @@ public class StudentController {
     // Profil bilgilerini güncelleme
     @PutMapping("/profile")
     public ResponseMessage updateStudentProfile(@AuthenticationPrincipal UserDetails userDetails,
-                                                @RequestBody UpdateStudentProfileRequest updateRequest) throws StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
+                                                @RequestBody UpdateStudentProfileRequest updateRequest) throws StudentNotFoundException, StudentDeletedException, StudentNotActiveException, DuplicateMobilePhoneException, InvalidMobilePhoneException, DuplicateUsernameException, InvalidUsernameException {
         return studentService.updateStudentProfile(userDetails.getUsername(), updateRequest);
     }
 
@@ -92,7 +93,7 @@ public class StudentController {
     @PutMapping("/update-password")
     public ResponseMessage updatePassword(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam String newPassword) throws StudentInactiveException, SamePasswordException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
+            @RequestParam String newPassword) throws StudentInactiveException, SamePasswordException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException, IllegalPasswordException {
         return studentService.updatePassword(userDetails.getUsername(), newPassword);
     }
 
@@ -168,6 +169,13 @@ public class StudentController {
                                                               @RequestParam(defaultValue = "0") int page) throws StudentNotFoundException {
         return studentService.getHomeStories(userDetails.getUsername(), page);
     }
+
+    @GetMapping("/suggested-connections")
+    public DataResponseMessage<List<String>> getSuggestedConnections(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
+        return studentService.getSuggestedConnections(userDetails.getUsername());
+    }
+
+
 }
 
 
