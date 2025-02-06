@@ -68,14 +68,12 @@ public class AdminController {
     public ResponseMessage updateAcademicInfo(@AuthenticationPrincipal UserDetails userDetails,
                                               @RequestParam Department department,
                                               @RequestParam Faculty faculty) throws InvalidDepartmentException, StudentNotFoundException, InvalidFacultyException, StudentNotActiveException {
-        // Belirtilen öğrencinin akademik bilgilerini günceller
         return studentService.updateAcademicInfo(userDetails.getUsername(), department, faculty);
     }
 
     // Öğrenci istatistiklerini döner
     @GetMapping("/statistics")
     public DataResponseMessage<StudentStatistics> getStudentStatistics(@AuthenticationPrincipal UserDetails userDetails) throws UserNotFoundException, UnauthorizedException {
-        // Genel öğrenci istatistiklerini döner
         return studentService.getStudentStatistics(userDetails.getUsername());
     }
 
@@ -85,7 +83,6 @@ public class AdminController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) LocalDate birthDate,
             @RequestParam(required = false) Grade grade) throws UserNotFoundException, UnauthorizedException {
-        // Belirtilen kriterlere göre öğrencileri filtreler
         return studentService.filterStudents(userDetails.getUsername(), birthDate, grade);
     }
 
@@ -95,7 +92,6 @@ public class AdminController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) Department department,
             @RequestParam(required = false) Faculty faculty) throws UserNotFoundException, UnauthorizedException {
-        // Bölüm veya fakülteye göre öğrenci sayısını döner
         return studentService.countStudentsByDepartmentOrFaculty(userDetails.getUsername(), department, faculty);
     }
 
@@ -105,7 +101,6 @@ public class AdminController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) throws UserNotFoundException, UnauthorizedException {
-        // Tüm öğrencileri sayfalama ile döner
         return studentService.getAllStudents(userDetails.getUsername(), page, size);
     }
 
@@ -116,6 +111,9 @@ public class AdminController {
             @RequestParam Boolean isActive) throws StudentNotFoundException, StudentStatusAlreadySetException {
         return studentService.updateStudentStatus(userDetails.getUsername(), isActive);
     }
+
+
+
 
 
 }

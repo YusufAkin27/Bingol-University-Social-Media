@@ -16,6 +16,7 @@ import bingol.campus.student.exceptions.StudentNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -131,6 +132,20 @@ public class PostController {
     public DataResponseMessage<List<PostDTO>> archivedPosts(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
         return postService.archivedPosts(userDetails.getUsername());
     }
+
     // arşivden kaldırma
+    @DeleteMapping("/{postId}/archivedPost")
+    public ResponseMessage deleteArchived(@AuthenticationPrincipal UserDetails userDetails
+            , @PathVariable Long postId) throws PostNotFoundException, ArchivedNotFoundPost, StudentNotFoundException {
+        return postService.deleteArchived(userDetails.getUsername(), postId);
+    }
+
+    // kaydedilenler
+    @GetMapping("/recorded")
+    public DataResponseMessage<List<PostDTO>> recorded(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
+        return postService.recorded(userDetails.getUsername());
+    }
+
+
 
 }

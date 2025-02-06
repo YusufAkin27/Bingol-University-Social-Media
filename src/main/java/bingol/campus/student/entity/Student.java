@@ -8,9 +8,8 @@ import bingol.campus.followRelation.entity.FollowRelation;
 import bingol.campus.friendRequest.entity.FriendRequest;
 import bingol.campus.like.entity.Like;
 import bingol.campus.log.entity.Log;
-import bingol.campus.mailservice.VerificationToken;
+import bingol.campus.verificationToken.VerificationToken;
 
-import bingol.campus.mailservice.VerificationTokenType;
 import bingol.campus.post.entity.Post;
 import bingol.campus.story.entity.FeaturedStory;
 import bingol.campus.story.entity.Story;
@@ -78,6 +77,9 @@ public class Student extends User {
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Post> post = new ArrayList<>();
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Post> recorded = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Story> stories = new ArrayList<>();

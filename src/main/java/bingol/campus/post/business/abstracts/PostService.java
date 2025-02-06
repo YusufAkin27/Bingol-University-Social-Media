@@ -14,6 +14,7 @@ import bingol.campus.story.core.exceptions.OwnerStoryException;
 import bingol.campus.story.core.exceptions.StoryNotFoundException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -53,4 +54,7 @@ public interface PostService {
 
     DataResponseMessage<List<PostDTO>> archivedPosts(String username) throws StudentNotFoundException;
 
+    ResponseMessage deleteArchived(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, ArchivedNotFoundPost;
+
+    DataResponseMessage<List<PostDTO>> recorded(String username) throws StudentNotFoundException;
 }

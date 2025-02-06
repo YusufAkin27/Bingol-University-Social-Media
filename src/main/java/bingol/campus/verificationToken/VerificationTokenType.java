@@ -1,4 +1,4 @@
-package bingol.campus.mailservice;
+package bingol.campus.verificationToken;
 
 public enum VerificationTokenType {
     PASSWORD_RESET,

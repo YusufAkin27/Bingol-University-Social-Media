@@ -45,7 +45,7 @@ public class StudentConverterImpl implements StudentConverter {
         student.setGrade(createStudentRequest.getGrade()); // Sınıfı alıyoruz
         student.setProfilePhoto("https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg");
         student.setMobilePhone(createStudentRequest.getMobilePhone()); // Telefonu alıyoruz
-        student.setIsActive(false);
+        student.setIsActive(true);
         student.setUsername(createStudentRequest.getUsername());
         student.setLastName(createStudentRequest.getLastName()); // Soyadı alıyoruz
         return student;

@@ -37,6 +37,9 @@ import bingol.campus.student.exceptions.*;
 
 import bingol.campus.student.repository.StudentRepository;
 import bingol.campus.student.rules.StudentRules;
+import bingol.campus.verificationToken.VerificationToken;
+import bingol.campus.verificationToken.VerificationTokenRepository;
+import bingol.campus.verificationToken.VerificationTokenType;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;

@@ -6,24 +6,13 @@ public enum Grade {
     IKI_SINIF,      // 2. Sınıf
     UCUNCU_SINIF,   // 3. Sınıf
     DORDUNCU_SINIF, // 4. Sınıf
-    MEZUN;
+    MEZUN,
+    YUKSEK_LISANS_BIRINCI,
+    YUKSEK_LISANS_IKINCI,
+    YUKSEK_LISANS_MEZUN,
+    DOKTORA_BIRINCI,
+    DOKTORA_IKINCI,
+    DOKTORA_UCUNCU,
+    DOKTORA_MEZUN;
 
-
-    // İsterseniz enum'da her sınıf için bir numara da tutabilirsiniz:
-    private int seviye;
-
-    Grade() {
-    }
-
-    Grade(int seviye) {
-        this.seviye = seviye;
-    }
-
-    public int getSeviye() {
-        return seviye;
-    }
-
-    public void setSeviye(int seviye) {
-        this.seviye = seviye;
-    }
 }

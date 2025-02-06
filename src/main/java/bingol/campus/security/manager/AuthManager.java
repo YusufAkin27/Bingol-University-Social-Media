@@ -33,11 +33,9 @@ public class AuthManager implements AuthService {
 
     @Override
     public TokenResponseDTO login(LoginRequestDTO loginRequestDTO) throws NotFoundUserException, UserDeletedException, UserNotActiveException, IncorrectPasswordException, UserRoleNotAssignedException {
-        // Kullanıcıyı bul
         Optional<User> userOptional = userRepository.findByUserNumber(loginRequestDTO.getUsername());
         User user = userOptional.orElseThrow(NotFoundUserException::new);
 
-        // Kullanıcının aktif ve silinmiş olmadığını kontrol et
         if (user instanceof Student student) {
             if (Boolean.TRUE.equals(student.getIsDeleted())) {
                 throw new UserDeletedException();
@@ -47,18 +45,14 @@ public class AuthManager implements AuthService {
             }
         }
 
-
-        // Şifre kontrolü
         if (!passwordEncoder.matches(loginRequestDTO.getPassword(), user.getPassword())) {
             throw new IncorrectPasswordException();
         }
 
-        // Ek güvenlik: Kullanıcının rollerini kontrol et
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
             throw new UserRoleNotAssignedException();
         }
 
-        // Token oluştur
         String accessToken = jwtService.generateAccessToken(user, loginRequestDTO.getIpAddress(), loginRequestDTO.getDeviceInfo());
         String refreshToken = jwtService.generateRefreshToken(user, loginRequestDTO.getIpAddress(), loginRequestDTO.getDeviceInfo());
 
@@ -69,17 +63,14 @@ public class AuthManager implements AuthService {
     @Override
     public ResponseEntity<?> updateAccessToken(UpdateAccessTokenRequestDTO updateAccessTokenRequestDTO) {
         try {
-            // Refresh token doğrulama
             if (!jwtService.validateRefreshToken(updateAccessTokenRequestDTO.getRefreshToken())) {
                 throw new InvalidRefreshTokenException();
             }
 
-            // Kullanıcıyı bul
             String userNumber = jwtService.getRefreshTokenClaims(updateAccessTokenRequestDTO.getRefreshToken()).getSubject();
             User user = userRepository.findByUserNumber(userNumber)
                     .orElseThrow(UserNotFoundException::new);
 
-            // Yeni access token oluştur
             String ipAddress = updateAccessTokenRequestDTO.getIpAddress();
             String deviceInfo = updateAccessTokenRequestDTO.getDeviceInfo();
             String newAccessToken = jwtService.generateAccessToken(user, ipAddress, deviceInfo);

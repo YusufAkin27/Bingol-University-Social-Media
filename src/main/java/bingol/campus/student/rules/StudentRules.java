@@ -16,10 +16,10 @@ public class StudentRules {
 
 
     public void baseControl(Student student) throws StudentNotActiveException, StudentDeletedException {
-        if (!student.getIsActive()){
+        if (!student.getIsActive()) {
             throw new StudentNotActiveException();
         }
-        if (student.getIsDeleted()){
+        if (student.getIsDeleted()) {
             throw new StudentDeletedException();
         }
     }
@@ -46,7 +46,7 @@ public class StudentRules {
     // Email kontrolü (format ve benzersizlik)
     public void validateEmail(String email) throws InvalidEmailException, DuplicateEmailException {
         // E-posta doğrulama: Genel format kontrolü ve bingol.edu.tr ile bitiş kontrolü
-        if (email == null || !email.matches("^[\\w-\\.]+@gmail.com")) {
+        if (email == null || !email.matches("^\\d{9}@bingol\\.edu\\.tr$")) {
             throw new InvalidEmailException();
         }
         // Benzersizlik kontrolü

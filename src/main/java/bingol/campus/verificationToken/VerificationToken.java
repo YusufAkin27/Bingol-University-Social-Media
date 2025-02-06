@@ -1,4 +1,4 @@
-package bingol.campus.mailservice;
+package bingol.campus.verificationToken;
 
 import bingol.campus.student.entity.Student;
 import jakarta.persistence.*;

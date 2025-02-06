@@ -34,6 +34,7 @@ import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -493,9 +494,27 @@ public class PostManager implements PostService {
 
     @Override
     public DataResponseMessage<List<PostDTO>> archivedPosts(String username) throws StudentNotFoundException {
-        Student student=studentRepository.getByUserNumber(username);
-        List<PostDTO>postDTOS=student.getArchivedPosts().stream().map(postConverter::toDto).toList();
-        return new DataResponseMessage<>("arşiv",true,postDTOS);
+        Student student = studentRepository.getByUserNumber(username);
+        List<PostDTO> postDTOS = student.getArchivedPosts().stream().map(postConverter::toDto).toList();
+        return new DataResponseMessage<>("arşiv", true, postDTOS);
+    }
+
+    @Override
+    @Transactional
+    public ResponseMessage deleteArchived(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, ArchivedNotFoundPost {
+        Student student = studentRepository.getByUserNumber(username);
+        Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        student.getArchivedPosts().stream().filter(p -> p.equals(post)).findFirst().orElseThrow(ArchivedNotFoundPost::new);
+        student.getArchivedPosts().remove(post);
+        studentRepository.save(student);
+        return new ResponseMessage("gönderi kaldırıldı", true);
+    }
+
+    @Override
+    public DataResponseMessage<List<PostDTO>> recorded(String username) throws StudentNotFoundException {
+        Student student = studentRepository.getByUserNumber(username);
+        List<PostDTO> postDTOS = student.getRecorded().stream().filter(Post::isActive).map(postConverter::toDto).toList();
+        return new DataResponseMessage<>("gönderiler", true, postDTOS);
     }
 
 
