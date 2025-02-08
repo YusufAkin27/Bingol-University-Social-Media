@@ -23,7 +23,7 @@ public class CreateStudentRequest {
     private Department department; // Bölüm
     private Faculty faculty; // Fakülte
     private Grade grade; // Sınıf
-    private LocalDateTime birthDate; // Doğum Tarihi
+    private LocalDate birthDate; // Doğum Tarihi
     private Boolean gender; // Cinsiyet (true: Erkek, false: Kadın)
 
 

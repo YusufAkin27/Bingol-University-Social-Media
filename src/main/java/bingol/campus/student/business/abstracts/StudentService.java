@@ -25,7 +25,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface StudentService {
-    ResponseMessage signUp(CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException, InvalidUsernameException;
+    ResponseMessage signUp(CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException, InvalidUsernameException, IllegalPasswordException, ValidateDepartmentException;
 
     DataResponseMessage<StudentDTO> getStudentProfile(String username) throws StudentNotFoundException;
 
@@ -85,5 +85,11 @@ public interface StudentService {
     ResponseMessage active(String token);
 
     DataResponseMessage<List<String >> getSuggestedConnections(String username) throws StudentNotFoundException;
+
+    ResponseMessage addModerator(String username, Long studentId) throws UnauthorizedException, StudentNotFoundException, UserNotFoundException;
+
+    ResponseMessage removeModerator(String username, Long studentId) throws StudentNotFoundException, UnauthorizedException;
+
+    DataResponseMessage<List<StudentDTO>> getModerators(String username) throws StudentNotFoundException, UnauthorizedException;
 
 }

@@ -111,9 +111,19 @@ public class AdminController {
             @RequestParam Boolean isActive) throws StudentNotFoundException, StudentStatusAlreadySetException {
         return studentService.updateStudentStatus(userDetails.getUsername(), isActive);
     }
-
-
-
-
+    @PostMapping("/{studentId}/moderator")
+    public ResponseMessage addModerator(@AuthenticationPrincipal UserDetails userDetails,
+                                        @PathVariable Long studentId) throws UserNotFoundException, UnauthorizedException, StudentNotFoundException {
+        return studentService.addModerator(userDetails.getUsername(),studentId);
+    }
+    @DeleteMapping("/{studentId}/moderator")
+    public ResponseMessage removeModerator(@AuthenticationPrincipal UserDetails userDetails,
+                                           @PathVariable Long studentId) throws UnauthorizedException, StudentNotFoundException {
+        return studentService.removeModerator(userDetails.getUsername(), studentId);
+    }
+    @GetMapping("/moderators")
+    public DataResponseMessage<List<StudentDTO>> getModerators(@AuthenticationPrincipal UserDetails userDetails) throws UnauthorizedException, StudentNotFoundException {
+        return studentService.getModerators(userDetails.getUsername());
+    }
 
 }

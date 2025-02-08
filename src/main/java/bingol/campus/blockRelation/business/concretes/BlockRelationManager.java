@@ -31,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -146,7 +147,7 @@ public class BlockRelationManager implements BlockRelationService {
 
     private void createBlockRelation(Student blocker, Student blocked) {
         BlockRelation blockRelation = new BlockRelation();
-        blockRelation.setBlockDate(LocalDateTime.now());
+        blockRelation.setBlockDate(LocalDate.now());
         blockRelation.setBlocked(blocked);
         blockRelation.setBlocker(blocker);
         blockRelationRepository.save(blockRelation);

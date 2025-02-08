@@ -5,6 +5,8 @@ import bingol.campus.like.business.abstracts.LikeService;
 import bingol.campus.like.core.exceptions.AlreadyLikedException;
 import bingol.campus.like.core.exceptions.PostNotFoundLikeException;
 import bingol.campus.like.core.exceptions.StoryNotFoundLikeException;
+import bingol.campus.post.core.exceptions.PostAccessDeniedWithBlockerException;
+import bingol.campus.post.core.exceptions.PostAccessDeniedWithPrivateException;
 import bingol.campus.post.core.exceptions.PostNotFoundException;
 import bingol.campus.post.core.exceptions.PostNotIsActiveException;
 import bingol.campus.post.core.response.PostDTO;
@@ -39,7 +41,7 @@ public class LikeController {
 
     // Gönderiyi beğenme
     @PostMapping("/post/{postId}")
-    public ResponseMessage likePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException, AlreadyLikedException, StudentProfilePrivateException {
+    public ResponseMessage likePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException, AlreadyLikedException, StudentProfilePrivateException, PostAccessDeniedWithPrivateException, PostAccessDeniedWithBlockerException {
         return likeService.likePost(userDetails.getUsername(), postId);
     }
 

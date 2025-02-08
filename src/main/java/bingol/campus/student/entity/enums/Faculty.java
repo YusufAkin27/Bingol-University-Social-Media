@@ -93,9 +93,7 @@ public enum Faculty {
         ));
     }
 
-    /**
-     * Belirtilen fakülteye ait bölümleri döndüren metot.
-     */
+
     public List<Department> getDepartments() {
         return facultyDepartments.getOrDefault(this, Collections.emptyList());
     }

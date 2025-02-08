@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,6 +27,6 @@ public class FollowRelation {
     @JoinColumn(name = "followed_id", nullable = false)
     private Student followed; // Takip edilen öğrenci
 
-    private LocalDateTime followingDate = LocalDateTime.now(); // Takip edilme tarihi
+    private LocalDate followingDate = LocalDate.now(); // Takip edilme tarihi
 
 }

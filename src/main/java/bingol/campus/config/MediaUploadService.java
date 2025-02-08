@@ -1,30 +1,36 @@
 package bingol.campus.config;
 
+import bingol.campus.student.exceptions.FileFormatCouldNotException;
+import bingol.campus.student.exceptions.OnlyPhotosAndVideosException;
+import bingol.campus.student.exceptions.PhotoSizeLargerException;
+import bingol.campus.student.exceptions.VideoSizeLargerException;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.cloudinary.Transformation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
 public class MediaUploadService {
-
 
     private final Cloudinary cloudinary;
 
     private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
     private static final long MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
-    public String uploadAndOptimizeMedia(MultipartFile file) throws IOException {
+    @Async
+    public CompletableFuture<String> uploadAndOptimizeMedia(MultipartFile file) throws IOException, VideoSizeLargerException, OnlyPhotosAndVideosException, PhotoSizeLargerException, FileFormatCouldNotException {
         String contentType = file.getContentType();
 
         if (contentType == null) {
-            throw new IOException("Dosya formatı belirlenemedi.");
+            throw new FileFormatCouldNotException();
         }
 
         if (contentType.startsWith("image/")) {
@@ -32,13 +38,14 @@ public class MediaUploadService {
         } else if (contentType.startsWith("video/")) {
             return uploadAndOptimizeVideo(file);
         } else {
-            throw new IOException("Sadece fotoğraf ve video yüklenebilir.");
+            throw new OnlyPhotosAndVideosException();
         }
     }
 
-    private String uploadAndOptimizeImage(MultipartFile photo) throws IOException {
+    @Async
+    private CompletableFuture<String> uploadAndOptimizeImage(MultipartFile photo) throws IOException, PhotoSizeLargerException {
         if (photo.getSize() > MAX_IMAGE_SIZE) {
-            throw new IOException("Fotoğraf boyutu 5MB'den büyük olamaz.");
+            throw new PhotoSizeLargerException();
         }
 
         Map<String, String> uploadResult = cloudinary.uploader().upload(photo.getBytes(), ObjectUtils.asMap(
@@ -51,12 +58,13 @@ public class MediaUploadService {
                         .crop("limit")
         ));
 
-        return uploadResult.get("url");
+        return CompletableFuture.completedFuture(uploadResult.get("url"));
     }
 
-    private String uploadAndOptimizeVideo(MultipartFile video) throws IOException {
+    @Async
+    private CompletableFuture<String> uploadAndOptimizeVideo(MultipartFile video) throws IOException, VideoSizeLargerException {
         if (video.getSize() > MAX_VIDEO_SIZE) {
-            throw new IOException("Video boyutu 50MB'den büyük olamaz.");
+            throw new VideoSizeLargerException();
         }
 
         Map<String, String> uploadResult = cloudinary.uploader().upload(video.getBytes(), ObjectUtils.asMap(
@@ -70,6 +78,6 @@ public class MediaUploadService {
                         .crop("limit")
         ));
 
-        return uploadResult.get("url");
+        return CompletableFuture.completedFuture(uploadResult.get("url"));
     }
 }

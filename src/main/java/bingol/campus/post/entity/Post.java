@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,7 @@ public class Post {
     @JoinColumn(name = "author_id", nullable = false)
     private Student student; // Gönderiyi paylaşan öğrenci
 
-    private List<String> photos; // Gönderi içeriği (metin, görsellerin URL'leri vb.)
+    private List<String> photos;
 
     @ManyToMany
     @JoinTable(name = "post_tags", joinColumns = @JoinColumn(name = "post_id"), inverseJoinColumns = @JoinColumn(name = "student_id"))
@@ -44,7 +45,7 @@ public class Post {
 
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now(); // Gönderinin oluşturulma tarihi
+    private LocalDateTime createdAt; // Gönderinin oluşturulma tarihi
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "post")
     private List<Comment> comments = new ArrayList<>(); // Yorumlar

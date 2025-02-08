@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @AllArgsConstructor
@@ -22,7 +23,7 @@ public class Like {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;  // Beğeni ID'si
-
+    private LocalDateTime createdAt=LocalDateTime.now();
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;  // Beğeniyi yapan öğrenci
@@ -35,5 +36,5 @@ public class Like {
     @JoinColumn(name = "story_id", nullable = true)
     private Story story;  // Beğenilen hikaye (null olabilir çünkü gönderi de beğenilebilir)
 
-    private LocalDateTime likedAt = LocalDateTime.now();  // Beğeninin yapıldığı zaman
+    private LocalDate likedAt = LocalDate.now();  // Beğeninin yapıldığı zaman
 }

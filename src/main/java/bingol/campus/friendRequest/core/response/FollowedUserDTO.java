@@ -1,10 +1,12 @@
 package bingol.campus.friendRequest.core.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,7 +18,8 @@ public class FollowedUserDTO {
     private String username;           // Kullanıcı adı
     private String fullName;           // Tam ad
     private String profilePhotoUrl;    // Profil fotoğrafı URL'si
-    private LocalDateTime followedDate; // Takip edildiği tarih
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate followedDate; // Takip edildiği tarih
     private boolean isActive;          // Takip ilişkisi aktif mi?
     private boolean isPrivate;
     private String bio;                // Kullanıcının biyografisi

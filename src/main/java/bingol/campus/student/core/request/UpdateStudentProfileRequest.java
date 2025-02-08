@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -22,7 +23,7 @@ public class UpdateStudentProfileRequest {
     private String username;
     private Department department; // Bölüm
     private String biograpy;
-    private LocalDateTime birthDate;
+    private LocalDate birthDate;
     private Faculty faculty; // Fakülte
     private Grade grade; // Sınıf
     private Boolean gender; // Cinsiyet (true: Erkek, false: Kadın)

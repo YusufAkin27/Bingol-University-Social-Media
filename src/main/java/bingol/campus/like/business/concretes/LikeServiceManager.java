@@ -9,6 +9,7 @@ import bingol.campus.like.entity.Like;
 import bingol.campus.like.repository.LikeRepository;
 import bingol.campus.notification.NotificationController;
 import bingol.campus.notification.SendNotificationRequest;
+import bingol.campus.post.business.concretes.PostManager;
 import bingol.campus.post.core.converter.PostConverter;
 import bingol.campus.post.core.exceptions.PostNotFoundException;
 import bingol.campus.post.core.exceptions.PostNotIsActiveException;
@@ -17,6 +18,7 @@ import bingol.campus.post.entity.Post;
 import bingol.campus.post.repository.PostRepository;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
+import bingol.campus.story.business.concretes.StoryManager;
 import bingol.campus.story.core.converter.StoryConverter;
 import bingol.campus.story.core.exceptions.NotFollowingException;
 import bingol.campus.story.core.exceptions.StoryNotActiveException;
@@ -34,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
@@ -57,18 +60,15 @@ public class LikeServiceManager implements LikeService {
     public ResponseMessage likeStory(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username);
 
-        // Hikaye bilgisi alınıyor
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
 
-        // Hikayenin aktif olup olmadığını kontrol et
         if (!story.isActive()) {
             throw new StoryNotActiveException();
         }
 
-        // Hikayeyi paylaştığı öğrenci (student1) bilgisi
         Student student1 = story.getStudent();
 
-        hasAccessToContent(student,student1);
+        hasAccessToContent(student, student1);
 
         boolean alreadyLiked = story.getLikes().stream()
                 .anyMatch(like -> like.getStudent().equals(student));  // Kullanıcı daha önce beğendi mi?
@@ -79,9 +79,10 @@ public class LikeServiceManager implements LikeService {
 
         // Yeni beğeni oluşturuluyor
         Like like = new Like();
-        like.setLikedAt(LocalDateTime.now());
+        like.setLikedAt(LocalDate.now());
         like.setStory(story);
         like.setPost(null);
+        like.setCreatedAt(LocalDateTime.now());
         like.setStudent(student);
         story.getLikes().add(like);
 
@@ -120,7 +121,7 @@ public class LikeServiceManager implements LikeService {
 
         Student student1 = post.getStudent();
 
-        hasAccessToContent(student,student1);
+        hasAccessToContent(student, student1);
         boolean alreadyLiked = post.getLikes().stream()
                 .anyMatch(like -> like.getStudent().equals(student));  // Kullanıcı daha önce beğendi mi?
 
@@ -128,9 +129,10 @@ public class LikeServiceManager implements LikeService {
             return new ResponseMessage("zaten beğenildi", true);
         }
         Like like = new Like();
-        like.setLikedAt(LocalDateTime.now());
+        like.setLikedAt(LocalDate.now());
         like.setStory(null);
         like.setPost(post);
+        like.setCreatedAt(LocalDateTime.now());
         like.setStudent(student);
         post.getLikes().add(like);
         likeRepository.save(like);

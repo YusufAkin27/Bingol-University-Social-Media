@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,6 +30,6 @@ public class BlockRelation {
     @JoinColumn(name = "blocked_id", nullable = false)
     private Student blocked; // Engellenen öğrenci
 
-    private LocalDateTime blockDate = LocalDateTime.now(); // Engellemeyi gerçekleştiren tarih
+    private LocalDate blockDate = LocalDate.now(); // Engellemeyi gerçekleştiren tarih
 
 }

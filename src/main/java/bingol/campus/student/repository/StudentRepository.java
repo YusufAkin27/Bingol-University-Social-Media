@@ -1,6 +1,7 @@
 
 package bingol.campus.student.repository;
 
+import bingol.campus.security.entity.Role;
 import bingol.campus.student.entity.Student;
 import bingol.campus.student.entity.enums.Department;
 import bingol.campus.student.entity.enums.Faculty;
@@ -14,6 +15,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -68,4 +72,11 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
 
     Optional<Student> findByEmail(String email);
+
+    long countByCreatedAt(LocalDateTime today);
+
+    @Query("SELECT s.email FROM Student s WHERE :role MEMBER OF s.roles")
+    List<String> findEmailsByRoles(@Param("role") Role role);
+
+    List<Student> findByRoles(Role role);
 }

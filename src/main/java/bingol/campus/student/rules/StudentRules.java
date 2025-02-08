@@ -2,11 +2,15 @@ package bingol.campus.student.rules;
 
 import bingol.campus.student.core.request.CreateStudentRequest;
 import bingol.campus.student.entity.Student;
+import bingol.campus.student.entity.enums.Department;
+import bingol.campus.student.entity.enums.Faculty;
 import bingol.campus.student.exceptions.*;
 import bingol.campus.student.repository.StudentRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -52,15 +56,21 @@ public class StudentRules {
     // Email kontrolü (format ve benzersizlik)
     public void validateEmail(String email) throws InvalidEmailException, DuplicateEmailException {
         // E-posta doğrulama: Genel format kontrolü ve bingol.edu.tr ile bitiş kontrolü
-        if (email == null || !email.matches("^\\d{9}@bingol\\.edu\\.tr$")) {
-            throw new InvalidEmailException();
-        }
+        //if (email == null || !email.matches("^\\d{9}@bingol\\.edu\\.tr$")) {
+          //  throw new InvalidEmailException();
+        //}
         // Benzersizlik kontrolü
         if (studentRepository.existsByEmail(email)) {
             throw new DuplicateEmailException();
         }
     }
+    public void validateFacultyAndDepartment(Faculty faculty, Department department) throws ValidateDepartmentException {
+        List<Department> validDepartments = faculty.getDepartments();
 
+        if (!validDepartments.contains(department)) {
+            throw new ValidateDepartmentException(faculty,department,validDepartments);
+        }
+    }
 
     public void validatePassword(String password) throws IllegalPasswordException {
         if (password == null || password.strip().length() < 6) throw new IllegalPasswordException();
@@ -90,8 +100,10 @@ public class StudentRules {
     }
 
     // Tüm kontrolleri çağıran yöntem
-    public void validate(CreateStudentRequest request) throws  DuplicateUsernameException, InvalidMobilePhoneException, DuplicateMobilePhoneException, InvalidEmailException, DuplicateEmailException, MissingRequiredFieldException, InvalidUsernameException {
+    public void validate(CreateStudentRequest request) throws DuplicateUsernameException, InvalidMobilePhoneException, DuplicateMobilePhoneException, InvalidEmailException, DuplicateEmailException, MissingRequiredFieldException, InvalidUsernameException, IllegalPasswordException, ValidateDepartmentException {
         validateUsername(request.getUsername());
+        validatePassword(request.getPassword());
+        validateFacultyAndDepartment(request.getFaculty(),request.getDepartment());
         validateMobilePhone(request.getMobilePhone());
         validateEmail(request.getEmail());
         validateRequiredFields(request);

@@ -51,6 +51,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -79,7 +80,7 @@ public class StudentManager implements StudentService {
     @Override
     @Transactional
     public ResponseMessage signUp(CreateStudentRequest createStudentRequest) throws DuplicateUsernameException, MissingRequiredFieldException,
-            DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidEmailException, InvalidUsernameException {
+            DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidEmailException, InvalidUsernameException, IllegalPasswordException, ValidateDepartmentException {
         studentRules.validate(createStudentRequest);
 
         Optional<Student> existingStudent = studentRepository.findByEmail(createStudentRequest.getEmail());
@@ -236,18 +237,56 @@ public class StudentManager implements StudentService {
             commonFriendsCount.put(suggestedStudent.getUsername(), commonCount);
         }
 
-        List<Student> suggestedStudents = suggestedConnections.stream()
+        List<StudentDTO> suggestedStudents = suggestedConnections.stream()
                 .sorted((s1, s2) -> {
                     int count1 = commonFriendsCount.getOrDefault(s1.getUsername(), 0);
                     int count2 = commonFriendsCount.getOrDefault(s2.getUsername(), 0);
                     return Integer.compare(count2, count1);
                 })
                 .limit(15)
+                .map(studentConverter::toDto)
                 .collect(Collectors.toList());
 
         return new DataResponseMessage("Önerilen bağlantılar listelendi", true, suggestedStudents);
     }
 
+    @Override
+    @Transactional
+    public ResponseMessage addModerator(String username, Long studentId) throws UnauthorizedException, StudentNotFoundException, UserNotFoundException {
+        Student student = studentRepository.getByUserNumber(username);
+        if (!student.getRoles().contains(Role.ADMIN)) {
+            throw new UnauthorizedException();
+        }
+        Student student1 = studentRepository.findById(studentId).orElseThrow(StudentNotFoundException::new);
+
+        student1.getRoles().add(Role.MODERATOR);
+        studentRepository.save(student1);
+        return new ResponseMessage("moderator yetkisi verildi", true);
+    }
+
+    @Override
+    @Transactional
+    public ResponseMessage removeModerator(String username, Long studentId) throws StudentNotFoundException, UnauthorizedException {
+        Student student = studentRepository.getByUserNumber(username);
+        Student student1 = studentRepository.findById(studentId).orElseThrow(StudentNotFoundException::new);
+        if (!student.getRoles().contains(Role.ADMIN)) {
+            throw new UnauthorizedException();
+        }
+        student1.getRoles().removeIf(role -> role.equals(Role.MODERATOR));
+        studentRepository.save(student1);
+        return new ResponseMessage("yetki kaldırıldı", true);
+    }
+
+    @Override
+    public DataResponseMessage<List<StudentDTO>> getModerators(String username) throws StudentNotFoundException, UnauthorizedException {
+        Student student = studentRepository.getByUserNumber(username);
+        if (!student.getRoles().contains(Role.ADMIN)) {
+            throw new UnauthorizedException();
+        }
+        List<Student> students = studentRepository.findByRoles(Role.MODERATOR);
+        List<StudentDTO> studentDTOS = students.stream().map(studentConverter::toDto).toList();
+        return new DataResponseMessage<>("modereator listesi", true, studentDTOS);
+    }
 
 
     public Student findBySchoolNumber(String schoolNumber) throws StudentNotFoundException {
@@ -321,25 +360,32 @@ public class StudentManager implements StudentService {
     }
 
 
-
     @Override
     @Transactional
     public ResponseMessage uploadProfilePhoto(String userName, MultipartFile photo)
-            throws StudentNotFoundException,  StudentDeletedException, StudentNotActiveException {
+            throws StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
 
         Student student = findBySchoolNumber(userName);
         studentRules.baseControl(student);
 
         try {
-            String photoUrl = mediaUploadService.uploadAndOptimizeMedia(photo);
+            String uploadedPhotoUrl = mediaUploadService.uploadAndOptimizeMedia(photo).join();
 
-            student.setProfilePhoto(photoUrl);
+            student.setProfilePhoto(uploadedPhotoUrl);
             studentRepository.save(student);
 
-            return new ResponseMessage("Profil fotoğrafı başarıyla yüklendi: " + photoUrl, true);
+            return new ResponseMessage("Profil fotoğrafı başarıyla yüklendi: " + uploadedPhotoUrl, true);
 
         } catch (IOException e) {
             return new ResponseMessage("Fotoğraf yüklenirken bir hata oluştu: " + e.getMessage(), false);
+        } catch (OnlyPhotosAndVideosException e) {
+            throw new RuntimeException(e);
+        } catch (PhotoSizeLargerException e) {
+            throw new RuntimeException(e);
+        } catch (VideoSizeLargerException e) {
+            throw new RuntimeException(e);
+        } catch (FileFormatCouldNotException e) {
+            throw new RuntimeException(e);
         }
 
     }
@@ -433,6 +479,12 @@ public class StudentManager implements StudentService {
         return new DataResponseMessage<>("İşlem başarılı: Öğrenciler sayıldı.", true, count);
     }
 
+    public boolean isAccess(Student student) {
+        if (student.getRoles().contains(Role.ADMIN) || student.getRoles().contains(Role.MODERATOR)) {
+            return true;
+        }
+        return false;
+    }
 
     @Override
     @Transactional

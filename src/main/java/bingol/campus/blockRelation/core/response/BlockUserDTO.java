@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -15,6 +16,6 @@ public class BlockUserDTO {
     private String username;
     private String firstName;
     private String lastName;
-    private LocalDateTime blockDate;
+    private LocalDate blockDate;
     private String profilePhoto;
 }

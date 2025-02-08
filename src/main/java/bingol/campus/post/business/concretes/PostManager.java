@@ -4,6 +4,7 @@ import bingol.campus.blockRelation.entity.BlockRelation;
 import bingol.campus.comment.core.converter.CommentConverter;
 import bingol.campus.comment.entity.Comment;
 import bingol.campus.comment.repository.CommentRepository;
+import bingol.campus.config.MediaUploadService;
 import bingol.campus.followRelation.entity.FollowRelation;
 import bingol.campus.like.core.converter.LikeConverter;
 import bingol.campus.like.entity.Like;
@@ -27,20 +28,23 @@ import bingol.campus.story.core.exceptions.StoryNotFoundException;
 import bingol.campus.story.entity.Story;
 import bingol.campus.story.repository.StoryRepository;
 import bingol.campus.student.entity.Student;
-import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.exceptions.*;
 import bingol.campus.student.repository.StudentRepository;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaTypeEditor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,76 +59,57 @@ public class PostManager implements PostService {
     private final LikeRepository likeRepository;
     private final NotificationController notificationController;
     private final CommentRepository commentRepository;
-    private final Cloudinary cloudinary;
+    private final MediaUploadService mediaUploadService;
 
     @Override
     @Transactional
-    public ResponseMessage add(String username, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws InvalidPostRequestException, StudentNotFoundException, UnauthorizedTaggingException, BlockedUserTaggedException, IOException {
-        // Kullanıcıyı al
+    public ResponseMessage add(String username, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws InvalidPostRequestException, StudentNotFoundException, UnauthorizedTaggingException, BlockedUserTaggedException, IOException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
         Student student = studentRepository.getByUserNumber(username);
 
-        // 1. Fotoğraf kontrolü: Fotoğraf boş olamaz
         if (photos == null || photos.length == 0) {
             return new ResponseMessage("Fotoğraf boş olamaz.", false);
         }
 
-        // 2. Gönderi açıklaması kontrolü
-        // Açıklama boş olabilir, bu yüzden burada kontrol yapmıyoruz
-
-        // 3. Tag edilen kişiler kontrolü
         if (tagAPerson != null && !tagAPerson.isEmpty()) {
             validateTaggedPersons(tagAPerson, student);
         }
 
-        // 4. Gönderiyi oluştur
         Post post = Post.builder()
-                .description(description)  // Açıklama boş olabilir
+                .description(description)
                 .location(location)
                 .isActive(true)
                 .isDelete(false)
-                .photos(new ArrayList<>())  // Fotoğraflar için başlangıçta boş bir liste
+                .photos(new ArrayList<>())
+                .createdAt(LocalDateTime.now())
                 .taggedPersons(new ArrayList<>())
                 .build();
-        post.setStudent(student);  // Gönderiyi paylaşan öğrenciye ait bilgiyi set et
-
-        // 5. Fotoğrafları Cloudinary'ye yükle
-        for (MultipartFile photo : photos) {
-            // Fotoğraf formatını kontrol et
-            String contentType = photo.getContentType();
-            if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/png"))) {
-                return new ResponseMessage("Yalnızca JPEG veya PNG formatındaki dosyalar kabul edilir.", false);
-            }
-
-            // Maksimum dosya boyutu kontrolü (2MB)
-            long maxFileSize = 10 * 1024 * 1024; // 2MB
-            if (photo.getSize() > maxFileSize) {
-                return new ResponseMessage("Dosya boyutu 10MB'den büyük olamaz.", false);
-            }
+        post.setStudent(student);
 
 
-            Map<String, String> uploadResult = cloudinary.uploader().upload(photo.getBytes(), ObjectUtils.emptyMap());
-            String photoUrl = uploadResult.get("url");
+        List<CompletableFuture<String>> uploadFutures = new ArrayList<>();
 
-            // Yüklenen fotoğrafın URL'sini post'a ekle
-            post.getPhotos().add(photoUrl);  // Fotoğraf URL'sini post'un photos alanına ekle
+        for (MultipartFile file : photos) {
+            uploadFutures.add(mediaUploadService.uploadAndOptimizeMedia(file));
         }
 
-        // 6. Tag edilen kişileri ekle
+        CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
+
+        uploadFutures.forEach(future -> post.getPhotos().add(future.join()));
+
+
         if (tagAPerson != null && !tagAPerson.isEmpty()) {
             for (String taggedUsername : tagAPerson) {
                 Student taggedStudent = studentRepository.getByUserNumber(taggedUsername);
                 if (taggedStudent != null) {
-                    post.getTaggedPersons().add(taggedStudent);  // Taglenen öğrenciyi post'a ekle
+                    post.getTaggedPersons().add(taggedStudent);
                 } else {
                     throw new StudentNotFoundException();
                 }
             }
         }
 
-        // 7. Öğrencinin gönderisini ekle
         student.getPost().add(post);
 
-        // 8. Gönderiyi kaydet
         postRepository.save(post);
 
         List<String> fmcTokens = student.getFollowers().stream()
@@ -152,7 +137,7 @@ public class PostManager implements PostService {
 
     @Override
     @Transactional
-    public ResponseMessage update(String username, Long postId, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws StudentNotFoundException, PostNotFoundException, PostNotFoundForUserException, IOException, UnauthorizedTaggingException, BlockedUserTaggedException {
+    public ResponseMessage update(String username, Long postId, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws StudentNotFoundException, PostNotFoundException, PostNotFoundForUserException, IOException, UnauthorizedTaggingException, BlockedUserTaggedException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
         // Kullanıcıyı al
         Student student = studentRepository.getByUserNumber(username);
         Post post = postRepository.findById(postId)
@@ -178,31 +163,14 @@ public class PostManager implements PostService {
             List<String> updatedPhotos = new ArrayList<>();
 
             for (MultipartFile photo : photos) {
-                // Fotoğraf formatını kontrol et
-                String contentType = photo.getContentType();
-                if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/png"))) {
-                    return new ResponseMessage("Yalnızca JPEG veya PNG formatındaki dosyalar kabul edilir.", false);
-                }
+                String uploadedPhotoUrl = mediaUploadService.uploadAndOptimizeMedia(photo).join();
+                post.getPhotos().add(uploadedPhotoUrl);
 
-                // Maksimum dosya boyutu kontrolü (2MB)
-                long maxFileSize = 10 * 1024 * 1024; // 2MB
-                if (photo.getSize() > maxFileSize) {
-                    return new ResponseMessage("Dosya boyutu 10MB'den büyük olamaz.", false);
-                }
-
-                // Fotoğrafı Cloudinary'ye yükle
-                Map<String, String> uploadResult = cloudinary.uploader().upload(photo.getBytes(), ObjectUtils.emptyMap());
-                String photoUrl = uploadResult.get("url");
-
-                // Yüklenen fotoğraf URL'sini ekle
-                updatedPhotos.add(photoUrl);
             }
 
-            // Güncellenen fotoğraf listesini set et
             post.setPhotos(updatedPhotos);
         }
 
-        // Tag edilen kişiler güncellemesi
         if (tagAPerson != null && !tagAPerson.isEmpty()) {
             validateTaggedPersons(tagAPerson, student);
 
@@ -216,11 +184,9 @@ public class PostManager implements PostService {
                 }
             }
 
-            // Tag edilen kişileri güncelle
             post.setTaggedPersons(updatedTaggedPersons);
         }
 
-        // Gönderiyi kaydet
         postRepository.save(post);
 
         return new ResponseMessage("Gönderi başarıyla güncellendi.", true);
@@ -344,21 +310,23 @@ public class PostManager implements PostService {
         }
         return true;
     }
+    public boolean isAccessPost(Student student,Student postOwner) throws PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
+        isBlockedByPostOwner(student,postOwner);
+        isBlockedByPostOwner(postOwner,student);
+        isPrivatePostOwner(student,postOwner);
+        return true;
+    }
 
     @Override
     public DataResponseMessage<List<PostDTO>> getMyPosts(String username, Pageable pageable) throws StudentNotFoundException {
-        // Öğrenciyi bul
         Student student = studentRepository.getByUserNumber(username);
 
-        // Kullanıcının gönderdiği postları sayfalı şekilde al
         Page<Post> postsPage = postRepository.findByStudentAndIsActive(student, true, pageable);
 
-        // Sayfa içeriğindeki gönderileri DTO'ya dönüştür
         List<PostDTO> postDTOS = postsPage.getContent().stream()
-                .map(postConverter::toDto) // Postları DTO'ya dönüştür
+                .map(postConverter::toDto)
                 .collect(Collectors.toList());
 
-        // Sayfa bilgisi ve içerik ile döndür
         return new DataResponseMessage<>("Başarılı", true, postDTOS);
     }
 
@@ -367,22 +335,17 @@ public class PostManager implements PostService {
     public DataResponseMessage<List<PostDTO>> getUserPosts(String username, String username1, Pageable pageable)
             throws PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException, StudentNotFoundException {
 
-        // Öğrenciyi ve gönderi sahibini bul
         Student student = studentRepository.getByUserNumber(username);
         Student ownerPost = studentRepository.getByUserNumber(username1);
 
-        // Kullanıcı kendi gönderilerini istiyorsa, getMyPosts metodunu çağır
         if (student.equals(ownerPost)) {
-            return getMyPosts(student.getUsername(), pageable); // getMyPosts metoduna sayfalama parametresi ekle
+            return getMyPosts(student.getUsername(), pageable);
         }
 
-        // Kullanıcının, gönderi sahibini engelleyip engellemediğini kontrol et
         isBlockedByPostOwner(student, ownerPost);
         isBlockedByPostOwner(ownerPost, student);
-        // Kullanıcının özel profilde olup olmadığını kontrol et
         isPrivatePostOwner(student, ownerPost);
 
-        // Gönderilerin sayfalı şekilde alınması
         Page<Post> postsPage = postRepository.findByStudentAndIsActive(ownerPost, true, pageable);
 
         // Sayfa içeriğini DTO'ya dönüştür

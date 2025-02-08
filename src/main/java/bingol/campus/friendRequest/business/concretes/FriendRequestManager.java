@@ -29,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,61 +49,61 @@ public class FriendRequestManager implements FriendRequestService {
     @Override
     @Transactional
     public ResponseMessage sendFriendRequest(String username, Long userId) throws StudentNotFoundException, SelfFriendRequestException, AlreadySentRequestException, AlreadyFollowingException, BlockedByUserException, UserBlockedException, StudentDeletedException, StudentNotActiveException {
-        Student gönderen = studentRepository.getByUserNumber(username);
-        Student alıcı = findById(userId);
+        Student sent = studentRepository.getByUserNumber(username);
+        Student receiver = findById(userId);
 
-        if (gönderen.getId().equals(alıcı.getId())) {
+        if (sent.getId().equals(receiver.getId())) {
             throw new SelfFriendRequestException();
         }
 
-        boolean isFollowing = gönderen.getFollowing().stream()
-                .anyMatch(followRelation -> followRelation.getFollowed().getId().equals(alıcı.getId()));
+        boolean isFollowing = sent.getFollowing().stream()
+                .anyMatch(followRelation -> followRelation.getFollowed().getId().equals(receiver.getId()));
 
         if (isFollowing) {
             throw new AlreadyFollowingException();
         }
 
-        boolean isBlockedBySender = gönderen.getBlocked().stream()
-                .anyMatch(blockedUser -> blockedUser.getId().equals(alıcı.getId()));
+        boolean isBlockedBySender = sent.getBlocked().stream()
+                .anyMatch(blockedUser -> blockedUser.getId().equals(receiver.getId()));
 
         if (isBlockedBySender) {
             throw new BlockedByUserException();
         }
 
-        boolean isBlockedByReceiver = alıcı.getBlocked().stream()
-                .anyMatch(blockedUser -> blockedUser.getId().equals(gönderen.getId()));
+        boolean isBlockedByReceiver = receiver.getBlocked().stream()
+                .anyMatch(blockedUser -> blockedUser.getId().equals(sent.getId()));
 
         if (isBlockedByReceiver) {
             throw new UserBlockedException();
         }
 
-        boolean alreadyRequested = gönderen.getSentRequest().stream()
-                .anyMatch(friendRequest -> friendRequest.getReceiver().getId().equals(alıcı.getId()));
+        boolean alreadyRequested = sent.getSentRequest().stream()
+                .anyMatch(friendRequest -> friendRequest.getReceiver().getId().equals(receiver.getId()));
 
         if (alreadyRequested) {
             throw new AlreadySentRequestException();
         }
-        if (alıcı.isPrivate()) {
+        if (receiver.isPrivate()) {
             FriendRequest friendRequest = new FriendRequest();
-            friendRequest.setReceiver(alıcı);
-            friendRequest.setSender(gönderen);
-            friendRequest.setSentAt(LocalDateTime.now());
+            friendRequest.setReceiver(receiver);
+            friendRequest.setSender(sent);
+            friendRequest.setSentAt(LocalDate.now());
             friendRequest.setStatus(RequestStatus.PENDING);
 
-            alıcı.getReceiverRequest().add(friendRequest);
-            gönderen.getSentRequest().add(friendRequest);
+            receiver.getReceiverRequest().add(friendRequest);
+            sent.getSentRequest().add(friendRequest);
             friendRequestRepository.save(friendRequest);
             CreateLogRequest createLogRequest=new CreateLogRequest();
-            createLogRequest.setMessage(gönderen.getUsername()+" den istek geldi");
-            createLogRequest.setStudentId(alıcı.getId());
+            createLogRequest.setMessage(sent.getUsername()+" den istek geldi");
+            createLogRequest.setStudentId(receiver.getId());
             logService.addLog(createLogRequest);
 
 
-            if (alıcı.getFcmToken() != null) {
+            if (receiver.getFcmToken() != null) {
                 SendNotificationRequest sendNotificationRequest = new SendNotificationRequest();
                 sendNotificationRequest.setTitle("İstek Geldi!!");
-                sendNotificationRequest.setFmcToken(alıcı.getFcmToken());
-                sendNotificationRequest.setMessage(gönderen.getUsername() + " Kullanıcısından istek geldi");
+                sendNotificationRequest.setFmcToken(receiver.getFcmToken());
+                sendNotificationRequest.setMessage(sent.getUsername() + " Kullanıcısından istek geldi");
 
                 try {
                     notificationController.sendToUser(sendNotificationRequest);
@@ -117,16 +118,16 @@ public class FriendRequestManager implements FriendRequestService {
 
         } else {
             FollowRelation followRelation = new FollowRelation();
-            followRelation.setFollower(gönderen);
-            followRelation.setFollowed(alıcı);
-            followRelation.setFollowingDate(LocalDateTime.now());
+            followRelation.setFollower(sent);
+            followRelation.setFollowed(receiver);
+            followRelation.setFollowingDate(LocalDate.now());
 
-            alıcı.getFollowers().add(followRelation);
-            gönderen.getFollowing().add(followRelation);
+            receiver.getFollowers().add(followRelation);
+            sent.getFollowing().add(followRelation);
             followRelationRepository.save(followRelation);
 
-            studentRepository.save(alıcı);
-            studentRepository.save(gönderen);
+            studentRepository.save(receiver);
+            studentRepository.save(sent);
         }
 
         return new ResponseMessage("Arkadaşlık Eklendi", true);
@@ -202,7 +203,7 @@ public class FriendRequestManager implements FriendRequestService {
         FollowRelation followRelation = new FollowRelation();
         followRelation.setFollower(follower);
         followRelation.setFollowed(followed);
-        followRelation.setFollowingDate(LocalDateTime.now());
+        followRelation.setFollowingDate(LocalDate.now());
 
         followed.getFollowers().add(followRelation);
         follower.getFollowing().add(followRelation);

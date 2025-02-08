@@ -1,6 +1,7 @@
 package bingol.campus.post.core.response;
 
 import bingol.campus.comment.core.response.CommentDTO;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +23,9 @@ public class PostDTO {
     private String description;
     private List<String>tagAPerson;
     private String location;
-    private LocalDateTime createdAt; // Gönderinin oluşturulma tarihi
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
+    private String howMoneyMinutesAgo;
 
     private long like;
     private long comment;

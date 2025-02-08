@@ -3,6 +3,9 @@ package bingol.campus.student.entity;
 
 import bingol.campus.blockRelation.entity.BlockRelation;
 
+import bingol.campus.chat.entity.ChatMedia;
+import bingol.campus.chat.entity.ChatParticipant;
+import bingol.campus.chat.entity.Message;
 import bingol.campus.comment.entity.Comment;
 import bingol.campus.followRelation.entity.FollowRelation;
 import bingol.campus.friendRequest.entity.FriendRequest;
@@ -16,6 +19,7 @@ import bingol.campus.story.entity.Story;
 import bingol.campus.student.entity.enums.Department;
 import bingol.campus.student.entity.enums.Faculty;
 import bingol.campus.student.entity.enums.Grade;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import bingol.campus.security.entity.User;
@@ -24,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -38,7 +43,7 @@ public class Student extends User {
     private String email;
     private String mobilePhone;
     private String username;
-
+    private LocalDateTime createdAt;
     @Enumerated(EnumType.STRING)
     private Department department;
 
@@ -48,14 +53,14 @@ public class Student extends User {
     @Enumerated(EnumType.STRING)
     private Grade grade;
 
-    private LocalDateTime birthDate;
+    private LocalDate birthDate;
     private String profilePhoto;
     private Boolean gender;
-    private Boolean isActive ;
-    private Boolean isDeleted ;
+    private Boolean isActive;
+    private Boolean isDeleted;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<VerificationToken> verificationTokens=new ArrayList<>();
+    private List<VerificationToken> verificationTokens = new ArrayList<>();
 
     private boolean isPrivate;
     private String bio;
@@ -105,9 +110,6 @@ public class Student extends User {
     // enum rozetler
     //Zaman Bazlı İçerik Temaları: Belirli dönemlerde (mevsim, tatil vb.) veya kullanıcının ilgi alanına göre otomatik değişen tema ve arayüz seçenekleri.
 
-
-
-/*
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<ChatParticipant> chatParticipants = new ArrayList<>(); // Kullanıcının katıldığı sohbetler
@@ -118,8 +120,6 @@ public class Student extends User {
 
     @OneToMany(mappedBy = "uploadedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ChatMedia> mediaFiles = new ArrayList<>(); // Kullanıcının gönderdiği medya dosyaları
-
- */
 
 
 

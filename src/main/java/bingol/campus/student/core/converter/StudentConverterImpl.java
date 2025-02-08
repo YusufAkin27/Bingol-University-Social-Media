@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,7 @@ public class StudentConverterImpl implements StudentConverter {
 
         Student student = new Student();
         student.setPrivate(false);
+        student.setCreatedAt(LocalDateTime.now());
         student.setUserNumber(createStudentRequest.getUsername()); // kullanıcı adı
         student.setPassword(passwordEncoder.encode(createStudentRequest.getPassword())); // Şifreyi şifreliyoruz
         student.setRoles(Set.of(Role.STUDENT)); // Rolü belirliyoruz
@@ -41,6 +44,7 @@ public class StudentConverterImpl implements StudentConverter {
         student.setBirthDate(createStudentRequest.getBirthDate()); // Doğum tarihini alıyoruz
         student.setIsDeleted(false); // Varsayılan olarak silinmiş değil
         student.setDepartment(createStudentRequest.getDepartment()); // Bölümü alıyoruz
+        student.setBio(String.format("%s Fakültesi, %s bölümünde %s olarak öğrenim görüyorum.", createStudentRequest.getFaculty().getDisplayName(), createStudentRequest.getDepartment().getDisplayName(), createStudentRequest.getGrade().getDisplayName()));
         student.setFirstName(createStudentRequest.getFirstName()); // Adı alıyoruz
         student.setGrade(createStudentRequest.getGrade()); // Sınıfı alıyoruz
         student.setProfilePhoto("https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg");

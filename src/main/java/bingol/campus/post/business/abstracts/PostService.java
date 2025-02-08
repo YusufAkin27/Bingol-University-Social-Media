@@ -1,20 +1,18 @@
 package bingol.campus.post.business.abstracts;
 
 import bingol.campus.post.core.exceptions.*;
-import bingol.campus.post.core.request.CreatePostRequest;
-import bingol.campus.post.core.request.UpdatePostRequest;
+
 import bingol.campus.post.core.response.CommentDetailsDTO;
 import bingol.campus.post.core.response.LikeDetailsDTO;
 import bingol.campus.post.core.response.PostDTO;
-import bingol.campus.post.entity.Post;
+
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.security.exception.UserNotFoundException;
 import bingol.campus.story.core.exceptions.OwnerStoryException;
 import bingol.campus.story.core.exceptions.StoryNotFoundException;
-import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.exceptions.*;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -34,11 +32,9 @@ public interface PostService {
 
     ResponseMessage getCommentCount(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException;
 
+    ResponseMessage add(String username, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws InvalidPostRequestException, StudentNotFoundException, UnauthorizedTaggingException, BlockedUserTaggedException, IOException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException;
 
-
-    ResponseMessage add(String username, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws InvalidPostRequestException, StudentNotFoundException, UnauthorizedTaggingException, BlockedUserTaggedException, IOException;
-
-    ResponseMessage update(String username, Long postId, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws StudentNotFoundException, PostNotFoundException, PostNotFoundForUserException, IOException, UnauthorizedTaggingException, BlockedUserTaggedException;
+    ResponseMessage update(String username, Long postId, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws StudentNotFoundException, PostNotFoundException, PostNotFoundForUserException, IOException, UnauthorizedTaggingException, BlockedUserTaggedException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException;
 
     DataResponseMessage<List<PostDTO>> getMyPosts(String username, Pageable pageRequest) throws StudentNotFoundException;
 

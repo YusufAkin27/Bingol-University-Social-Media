@@ -1,5 +1,7 @@
 package bingol.campus.mailservice;
 
+import bingol.campus.security.exception.BusinessException;
+import bingol.campus.student.exceptions.EmailSendException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -50,24 +52,15 @@ public class MailService {
             helper.setSubject(email.getSubject());
             helper.setText(email.getBody(), email.isHtml());
             helper.setFrom(senderEmail);
-            int attempts = 3;
-            boolean sent = false;
 
-            while (attempts > 0 && !sent) {
-                try {
-                    mailSender.send(mimeMessage);
-                    log.info("📧 E-posta başarıyla gönderildi: {}", email.getToEmail());
-                    sent = true;
-                } catch (Exception e) {
-                    log.error("❌ E-posta gönderim hatası: {}", e.getMessage());
-                    attempts--;
-                    if (attempts == 0) {
-                        log.warn("E-posta kuyruğa geri eklendi: {}", email.getToEmail());
-                        queueEmail(email);
-                    }
-                }
+            try {
+                mailSender.send(mimeMessage);
+                log.info("📧 E-posta başarıyla gönderildi: {}", email.getToEmail());
+            } catch (Exception e) {
+                throw new EmailSendException();
             }
-        } catch (MessagingException e) {
+
+        } catch (MessagingException | EmailSendException e) {
             log.error("E-posta hazırlanırken hata oluştu: {}", e.getMessage());
         }
     }

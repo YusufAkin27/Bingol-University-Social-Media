@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,5 +31,5 @@ public class FriendRequest {
     @Enumerated(EnumType.STRING)
     private RequestStatus status = RequestStatus.PENDING; // İstek durumu (PENDING, ACCEPTED, REJECTED)
 
-    private LocalDateTime sentAt = LocalDateTime.now(); // İsteğin gönderildiği zaman
+    private LocalDate sentAt = LocalDate.now(); // İsteğin gönderildiği zaman
 }

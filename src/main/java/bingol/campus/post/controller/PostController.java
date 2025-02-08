@@ -12,7 +12,7 @@ import bingol.campus.security.entity.User;
 import bingol.campus.security.exception.UserNotFoundException;
 import bingol.campus.story.core.exceptions.OwnerStoryException;
 import bingol.campus.story.core.exceptions.StoryNotFoundException;
-import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.exceptions.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
@@ -40,9 +40,11 @@ public class PostController {
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "location", required = false) String location,
             @RequestParam(value = "tagAPerson", required = false) List<String> tagAPerson,
-            @RequestParam("photos") MultipartFile[] photos) throws UnauthorizedTaggingException, InvalidPostRequestException, StudentNotFoundException, BlockedUserTaggedException, IOException {
-        return postService.add(userDetails.getUsername(), description, location, tagAPerson, photos);
+            @RequestParam("mediaFiles") MultipartFile[] mediaFiles)
+            throws UnauthorizedTaggingException, InvalidPostRequestException, StudentNotFoundException, BlockedUserTaggedException, IOException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
+        return postService.add(userDetails.getUsername(), description, location, tagAPerson, mediaFiles);
     }
+
 
     @DeleteMapping("/{postId}")
     public ResponseMessage add(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws UserNotFoundException, PostNotFoundForUserException, PostNotFoundException, PostAlreadyNotActiveException, StudentNotFoundException, PostAlreadyDeleteException {
@@ -55,7 +57,7 @@ public class PostController {
                                       @RequestParam(value = "description", required = false) String description,
                                       @RequestParam(value = "location", required = false) String location,
                                       @RequestParam(value = "tagAPerson", required = false) List<String> tagAPerson,
-                                      @RequestParam(value = "photos", required = false) MultipartFile[] photos) throws UnauthorizedTaggingException, InvalidPostRequestException, StudentNotFoundException, BlockedUserTaggedException, IOException, PostNotFoundForUserException, PostNotFoundException {
+                                      @RequestParam(value = "photos", required = false) MultipartFile[] photos) throws UnauthorizedTaggingException, InvalidPostRequestException, StudentNotFoundException, BlockedUserTaggedException, IOException, PostNotFoundForUserException, PostNotFoundException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
         return postService.update(userDetails.getUsername(), postId, description, location, tagAPerson, photos);
     }
 

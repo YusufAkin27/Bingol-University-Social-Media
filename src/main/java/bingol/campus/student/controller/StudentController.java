@@ -37,7 +37,7 @@ public class StudentController {
 
     // Öğrenci kayıt olma
     @PostMapping("/sign-up")
-    public ResponseMessage signUp(@RequestBody CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException, InvalidUsernameException {
+    public ResponseMessage signUp(@RequestBody CreateStudentRequest createStudentRequest) throws DuplicateTcIdentityNumberException, DuplicateUsernameException, MissingRequiredFieldException, DuplicateMobilePhoneException, DuplicateEmailException, InvalidMobilePhoneException, InvalidSchoolNumberException, InvalidTcIdentityNumberException, InvalidEmailException, InvalidUsernameException, IllegalPasswordException, ValidateDepartmentException {
         return studentService.signUp(createStudentRequest);
     }
 
