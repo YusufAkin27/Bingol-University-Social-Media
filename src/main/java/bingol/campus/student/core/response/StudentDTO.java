@@ -3,6 +3,7 @@ package bingol.campus.student.core.response;
 import bingol.campus.student.entity.enums.Department;
 import bingol.campus.student.entity.enums.Faculty;
 import bingol.campus.student.entity.enums.Grade;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class StudentDTO {
     private String username;            // Kullanıcı adı
     private String email;               // E-posta adresi
     private String mobilePhone;         // Telefon numarası
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate birthDate;        // Doğum tarihi
     private Boolean gender;             // Cinsiyet (true: Erkek, false: Kadın)
     private Faculty faculty;            // Fakülte

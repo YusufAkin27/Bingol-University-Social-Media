@@ -34,7 +34,7 @@ public class PopularityScoreService {
 
     // Bu fonksiyon öğrenci için popülerlik skorunu günceller
     @Transactional
-    @Scheduled(cron = "0 0 5 * * ?") // Her gün saat 05:00'te çalışır
+    @Scheduled(cron = "0 0 12 * * ?") // Her gün saat 12:00'de çalışır
     public void updatePopularityScores() {
         List<Student> students = studentRepository.findAll();
         for (Student student : students) {

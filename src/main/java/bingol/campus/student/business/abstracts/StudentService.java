@@ -8,12 +8,12 @@ import bingol.campus.post.core.response.PostDTO;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.security.exception.UserNotFoundException;
-import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.student.core.response.PublicAccountDetails;
 import bingol.campus.student.core.request.CreateStudentRequest;
 import bingol.campus.student.core.response.StudentDTO;
 import bingol.campus.student.core.request.UpdateStudentProfileRequest;
 import bingol.campus.student.core.response.StudentStatistics;
+import bingol.campus.student.core.response.HomeStoryDTO;
 import bingol.campus.student.entity.enums.Department;
 import bingol.campus.student.entity.enums.Faculty;
 import bingol.campus.student.entity.enums.Grade;
@@ -74,7 +74,7 @@ public interface StudentService {
 
     DataResponseMessage<List<PostDTO>> getHomePosts(String username, int page) throws StudentNotFoundException;
 
-    DataResponseMessage<List<StoryDTO>> getHomeStories(String username, int page) throws StudentNotFoundException;
+    DataResponseMessage<List<HomeStoryDTO>> getHomeStories(String username, int page) throws StudentNotFoundException;
 
     ResponseMessage updateFcmToken(String username, String fcmToken) throws StudentNotFoundException;
 

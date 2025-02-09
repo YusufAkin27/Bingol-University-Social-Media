@@ -4,7 +4,7 @@ import bingol.campus.chat.core.request.AddParticipantRequest;
 import bingol.campus.chat.core.request.CreateChatRequest;
 import bingol.campus.chat.core.request.SendMessageRequest;
 import bingol.campus.chat.core.request.UpdateGroupRequest;
-import bingol.campus.chat.core.response.ChatResponse;
+import bingol.campus.chat.core.response.GroupChatResponse;
 import bingol.campus.chat.core.response.MessageResponse;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface GroupChatService  {
-    DataResponseMessage<ChatResponse> createGroupChat(String username, CreateChatRequest request);
+    DataResponseMessage<GroupChatResponse> createGroupChat(String username, CreateChatRequest request);
 
-    DataResponseMessage<List<ChatResponse>> getGroupChats(String username);
+    DataResponseMessage<List<GroupChatResponse>> getGroupChats(String username);
 
     DataResponseMessage<List<MessageResponse>> getGroupMessages(String username, Long chatId);
 
@@ -33,7 +33,7 @@ public interface GroupChatService  {
 
     ResponseMessage removeUserFromGroup(String username, Long chatId, Long participantId);
 
-    DataResponseMessage<ChatResponse> updateGroupProfile(String username, Long chatId, UpdateGroupRequest request);
+    DataResponseMessage<GroupChatResponse> updateGroupProfile(String username, Long chatId, UpdateGroupRequest request);
 
     ResponseMessage assignGroupAdmin(String username, Long chatId, Long userId);
 

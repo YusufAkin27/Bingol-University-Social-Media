@@ -4,8 +4,9 @@ package bingol.campus.chat.controller;
 import bingol.campus.chat.business.abstracts.GroupChatService;
 import bingol.campus.chat.business.abstracts.PrivateChatService;
 import bingol.campus.chat.core.request.*;
-import bingol.campus.chat.core.response.ChatResponse;
+import bingol.campus.chat.core.response.GroupChatResponse;
 import bingol.campus.chat.core.response.MessageResponse;
+import bingol.campus.chat.core.response.PrivateChatResponse;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.exceptions.StudentNotFoundException;
@@ -27,28 +28,28 @@ public class ChatController {
 
 
     // ✅ Yeni özel sohbet oluştur
-    @PostMapping("/private/create")
-    public DataResponseMessage<ChatResponse> createPrivateChat(@AuthenticationPrincipal UserDetails userDetails,
-                                                               @RequestBody CreateChatRequest request) throws StudentNotFoundException {
-        return privateChatService.createPrivateChat(userDetails.getUsername(), request);
+    @PostMapping("/private/create/{userId}")
+    public DataResponseMessage<PrivateChatResponse> createPrivateChat(@AuthenticationPrincipal UserDetails userDetails,
+                                                                      @PathVariable Long userId) throws StudentNotFoundException {
+        return privateChatService.createPrivateChat(userDetails.getUsername(), userId);
     }
 
     // ✅ Yeni grup sohbeti oluştur
     @PostMapping("/group/create")
-    public DataResponseMessage<ChatResponse> createGroupChat(@AuthenticationPrincipal UserDetails userDetails,
-                                                             @RequestBody CreateChatRequest request) throws StudentNotFoundException {
+    public DataResponseMessage<GroupChatResponse> createGroupChat(@AuthenticationPrincipal UserDetails userDetails,
+                                                                  @RequestBody CreateChatRequest request) throws StudentNotFoundException {
         return groupChatService.createGroupChat(userDetails.getUsername(), request);
     }
 
     // ✅ Kullanıcının özel sohbetlerini getir
     @GetMapping("/private/list")
-    public DataResponseMessage<List<ChatResponse>> getPrivateChats(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
+    public DataResponseMessage<List<PrivateChatResponse>> getPrivateChats(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
         return privateChatService.getPrivateChats(userDetails.getUsername());
     }
 
     // ✅ Kullanıcının grup sohbetlerini getir
     @GetMapping("/group/list")
-    public DataResponseMessage<List<ChatResponse>> getGroupChats(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
+    public DataResponseMessage<List<GroupChatResponse>> getGroupChats(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
         return groupChatService.getGroupChats(userDetails.getUsername());
     }
 
@@ -150,9 +151,9 @@ public class ChatController {
 
     // ✅ Grup profilini güncelle (Ad, açıklama, profil resmi vs.)
     @PutMapping("/group/{chatId}/update")
-    public DataResponseMessage<ChatResponse> updateGroupProfile(@AuthenticationPrincipal UserDetails userDetails,
-                                                                @PathVariable Long chatId,
-                                                                @RequestBody UpdateGroupRequest request) throws StudentNotFoundException {
+    public DataResponseMessage<GroupChatResponse> updateGroupProfile(@AuthenticationPrincipal UserDetails userDetails,
+                                                                     @PathVariable Long chatId,
+                                                                     @RequestBody UpdateGroupRequest request) throws StudentNotFoundException {
         return groupChatService.updateGroupProfile(userDetails.getUsername(), chatId, request);
     }
 

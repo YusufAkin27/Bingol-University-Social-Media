@@ -13,4 +13,6 @@ public interface StoryConverter {
 
     StoryDTO toDto(Story story);
     FeatureStoryDTO toFeatureStoryDto(FeaturedStory featuredStory);
+
+
 }

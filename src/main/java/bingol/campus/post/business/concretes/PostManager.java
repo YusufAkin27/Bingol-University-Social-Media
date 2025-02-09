@@ -79,24 +79,32 @@ public class PostManager implements PostService {
                 .location(location)
                 .isActive(true)
                 .isDelete(false)
-                .photos(new ArrayList<>())
+                .photos(new ArrayList<>()) // Liste başlatıldı
                 .createdAt(LocalDateTime.now())
-                .taggedPersons(new ArrayList<>())
+                .taggedPersons(new ArrayList<>()) // Liste başlatıldı
                 .build();
         post.setStudent(student);
 
+        List<CompletableFuture<String>> futures = Arrays.stream(photos)
+                .map(file -> {
+                    try {
+                        return mediaUploadService.uploadAndOptimizeMedia(file);
+                    } catch (IOException | VideoSizeLargerException | OnlyPhotosAndVideosException |
+                             PhotoSizeLargerException | FileFormatCouldNotException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .toList();
 
-        List<CompletableFuture<String>> uploadFutures = new ArrayList<>();
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        for (MultipartFile file : photos) {
-            uploadFutures.add(mediaUploadService.uploadAndOptimizeMedia(file));
-        }
+        List<String> uploadedUrls = futures.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
 
-        CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
+        post.setPhotos(uploadedUrls);
 
-        uploadFutures.forEach(future -> post.getPhotos().add(future.join()));
-
-
+        // **Etiketlenen kullanıcıları ekle**
         if (tagAPerson != null && !tagAPerson.isEmpty()) {
             for (String taggedUsername : tagAPerson) {
                 Student taggedStudent = studentRepository.getByUserNumber(taggedUsername);
@@ -109,13 +117,14 @@ public class PostManager implements PostService {
         }
 
         student.getPost().add(post);
+        postRepository.save(post); // **Gönderiyi kaydet**
 
-        postRepository.save(post);
-
+        // **Takipçilere bildirim gönder**
         List<String> fmcTokens = student.getFollowers().stream()
-                .filter(f -> f.getFollowed().getFcmToken() != null && f.getFollowed().getIsActive())
-                .map(f -> f.getFollowed().getFcmToken())
-                .collect(Collectors.toList());
+                .map(FollowRelation::getFollowed)
+                .filter(f -> f.getFcmToken() != null && f.getIsActive())
+                .map(Student::getFcmToken)
+                .toList();
 
         if (!fmcTokens.isEmpty()) {
             SendBulkNotificationRequest sendBulkNotificationRequest = new SendBulkNotificationRequest();

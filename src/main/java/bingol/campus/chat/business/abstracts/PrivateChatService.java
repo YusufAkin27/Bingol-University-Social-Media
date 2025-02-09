@@ -1,23 +1,24 @@
 package bingol.campus.chat.business.abstracts;
 
-import bingol.campus.chat.core.request.CreateChatRequest;
 import bingol.campus.chat.core.request.DeleteMessageRequest;
 import bingol.campus.chat.core.request.SendMessageRequest;
 import bingol.campus.chat.core.request.UpdateMessageRequest;
-import bingol.campus.chat.core.response.ChatResponse;
+import bingol.campus.chat.core.response.GroupChatResponse;
 import bingol.campus.chat.core.response.MessageResponse;
+import bingol.campus.chat.core.response.PrivateChatResponse;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
+import bingol.campus.student.exceptions.StudentNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface PrivateChatService {
-    DataResponseMessage<ChatResponse> createPrivateChat(String username, CreateChatRequest request);
+    DataResponseMessage<PrivateChatResponse> createPrivateChat(String username, Long userId) throws StudentNotFoundException;
 
-    DataResponseMessage<List<ChatResponse>> getPrivateChats(String username);
+    DataResponseMessage<List<PrivateChatResponse>> getPrivateChats(String username) throws StudentNotFoundException;
 
-    DataResponseMessage<List<MessageResponse>> getPrivateMessages(String username, Long chatId);
+    DataResponseMessage<List<MessageResponse>> getPrivateMessages(String username, Long chatId) throws StudentNotFoundException;
 
     DataResponseMessage<MessageResponse> sendPrivateMessage(String username, SendMessageRequest request);
 

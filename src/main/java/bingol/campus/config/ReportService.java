@@ -30,7 +30,7 @@ public class ReportService {
     private final StoryRepository storyRepository;
     private final LikeRepository likeRepository;
 
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "0 0 12 * * *")
     public void generateDailyReportScheduled() {
         log.info("📢 Günlük rapor oluşturuluyor...");
 

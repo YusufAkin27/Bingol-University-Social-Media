@@ -13,13 +13,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue"); // Grup ve özel mesajlar için broker
-        config.setApplicationDestinationPrefixes("/app"); // İstemciden gelen mesajlar bu prefix ile alınacak
-        config.setUserDestinationPrefix("/user"); // Kullanıcı bazlı mesajlaşma için prefix
+        config.setApplicationDestinationPrefixes("/app"); // İstemciden gelen mesajlar için
+        config.setUserDestinationPrefix("/user"); // Kullanıcı bazlı mesajlaşma için
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws") // WebSocket bağlantı noktası
+        registry.addEndpoint("/chat") // WebSocket bağlantı noktası (Burayı düzelttik)
                 .setAllowedOrigins("*")
                 .withSockJS();
     }

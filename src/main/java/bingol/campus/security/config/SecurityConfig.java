@@ -74,7 +74,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
+                "http://localhost:5000",
                 "http://10.0.2.2:64135",  // Android Emulator (Dart VM Service Portu)
                 "http://10.0.2.2:9101",   // Flutter DevTools için
                 "http://10.0.2.2:54109",  // Flutter Web Portu

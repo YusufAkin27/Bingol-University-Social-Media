@@ -5,22 +5,23 @@ import bingol.campus.chat.core.request.AddParticipantRequest;
 import bingol.campus.chat.core.request.CreateChatRequest;
 import bingol.campus.chat.core.request.SendMessageRequest;
 import bingol.campus.chat.core.request.UpdateGroupRequest;
-import bingol.campus.chat.core.response.ChatResponse;
+import bingol.campus.chat.core.response.GroupChatResponse;
 import bingol.campus.chat.core.response.MessageResponse;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+@Service
 public class GroupChatManager implements GroupChatService {
     @Override
-    public DataResponseMessage<ChatResponse> createGroupChat(String username, CreateChatRequest request) {
+    public DataResponseMessage<GroupChatResponse> createGroupChat(String username, CreateChatRequest request) {
         return null;
     }
 
     @Override
-    public DataResponseMessage<List<ChatResponse>> getGroupChats(String username) {
+    public DataResponseMessage<List<GroupChatResponse>> getGroupChats(String username) {
         return null;
     }
 
@@ -65,7 +66,7 @@ public class GroupChatManager implements GroupChatService {
     }
 
     @Override
-    public DataResponseMessage<ChatResponse> updateGroupProfile(String username, Long chatId, UpdateGroupRequest request) {
+    public DataResponseMessage<GroupChatResponse> updateGroupProfile(String username, Long chatId, UpdateGroupRequest request) {
         return null;
     }
 

@@ -20,7 +20,6 @@ import bingol.campus.security.entity.User;
 import bingol.campus.security.exception.UserNotFoundException;
 import bingol.campus.security.repository.UserRepository;
 import bingol.campus.story.core.converter.StoryConverter;
-import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.story.entity.Story;
 import bingol.campus.story.entity.StoryViewer;
 import bingol.campus.story.repository.StoryRepository;
@@ -51,7 +50,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -864,7 +862,7 @@ public class StudentManager implements StudentService {
 
 
     @Override
-    public DataResponseMessage<List<StoryDTO>> getHomeStories(String username, int page) throws StudentNotFoundException {
+    public DataResponseMessage<List<HomeStoryDTO>> getHomeStories(String username, int page) throws StudentNotFoundException {
         Student student = studentRepository.getByUserNumber(username);
 
         List<Student> followingList = student.getFollowing().stream()
@@ -876,25 +874,37 @@ public class StudentManager implements StudentService {
         }
 
         Pageable pageable = PageRequest.of(page, 10);
-
         Page<Story> storyPage = storyRepository.findByStudentInAndIsActiveTrueOrderByCreatedAtDesc(followingList, pageable);
 
-        List<StoryViewer> storyViewers = storyViewerRepository.findViewedStoryIdsByStudent(student);
-        List<Long> ids = storyViewers.stream().map(StoryViewer::getId).toList();
-
-        List<Story> sortedStories = storyPage.getContent().stream()
-                .filter(Story::isActive)
-                .sorted(Comparator
-                        .comparing((Story s) -> ids.contains(s.getId()))
-                        .thenComparing(Story::getCreatedAt, Comparator.reverseOrder())
-                )
+        List<Long> viewedStoryIds = storyViewerRepository.findViewedStoryIdsByStudent(student)
+                .stream()
+                .map(StoryViewer::getId)
                 .toList();
 
-        List<StoryDTO> storyDTOs = sortedStories.stream()
-                .map(storyConverter::toDto)
-                .toList();
+        Map<Long, HomeStoryDTO> studentStoryMap = new HashMap<>();
 
-        return new DataResponseMessage<>("Ana sayfa hikayeleri başarıyla getirildi.", true, storyDTOs);
+        for (Story story : storyPage) {
+            long studentId = story.getStudent().getId();
+
+            studentStoryMap.computeIfAbsent(studentId, id -> HomeStoryDTO.builder()
+                    .studentId(id)
+                    .username(story.getStudent().getUsername())
+                    .profilePhoto(story.getStudent().getProfilePhoto())
+                    .photos(new ArrayList<>())
+                    .storyId(new ArrayList<>())
+                    .isVisited(false)
+                    .build()
+            );
+
+            studentStoryMap.get(studentId).getPhotos().add(story.getPhoto());
+            studentStoryMap.get(studentId).getStoryId().add(story.getId());
+        }
+
+        studentStoryMap.forEach((id, dto) ->
+                dto.setVisited(dto.getStoryId().stream().anyMatch(viewedStoryIds::contains))
+        );
+
+        return new DataResponseMessage<>("Ana sayfa hikayeleri başarıyla getirildi.", true, new ArrayList<>(studentStoryMap.values()));
     }
 
     @Override

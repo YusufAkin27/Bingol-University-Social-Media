@@ -4,7 +4,10 @@ import bingol.campus.student.entity.Student;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -13,8 +16,8 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @Table(name = "chats")
+@SuperBuilder
 public class Chat {
 
     @Id
@@ -39,7 +42,7 @@ public class Chat {
 
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
-    private List<ChatParticipant> participants; // Sohbete katılan kullanıcılar
+    private List<ChatParticipant> participants=new ArrayList<>(); // Sohbete katılan kullanıcılar
 
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore

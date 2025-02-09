@@ -44,7 +44,7 @@ public class StudentConverterImpl implements StudentConverter {
         student.setBirthDate(createStudentRequest.getBirthDate()); // Doğum tarihini alıyoruz
         student.setIsDeleted(false); // Varsayılan olarak silinmiş değil
         student.setDepartment(createStudentRequest.getDepartment()); // Bölümü alıyoruz
-        student.setBio(String.format("%s Fakültesi, %s bölümünde %s olarak öğrenim görüyorum.", createStudentRequest.getFaculty().getDisplayName(), createStudentRequest.getDepartment().getDisplayName(), createStudentRequest.getGrade().getDisplayName()));
+        student.setBio(String.format("%s , %s bölümünde %s olarak öğrenim görüyorum.", createStudentRequest.getFaculty().getDisplayName(), createStudentRequest.getDepartment().getDisplayName(), createStudentRequest.getGrade().getDisplayName()));
         student.setFirstName(createStudentRequest.getFirstName()); // Adı alıyoruz
         student.setGrade(createStudentRequest.getGrade()); // Sınıfı alıyoruz
         student.setProfilePhoto("https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg");
