@@ -782,16 +782,46 @@ public class StudentManager implements StudentService {
     }
 
     @Override
-    public DataResponseMessage<List<PublicAccountDetails>> getBestPopularity(String username) {
+    public DataResponseMessage<List<BestPopularityAccount>> getBestPopularity(String username) {
         List<Student> students = studentRepository.findAll();
 
-        List<PublicAccountDetails> topStudents = students.stream()
+        List<BestPopularityAccount> topStudents = students.stream()
                 .sorted(Comparator.comparingInt(Student::getPopularityScore).reversed())
                 .limit(3)
-                .map(studentConverter::publicAccountDto)
+                .map(student -> {
+                    try {
+                        return this.toBestPopularityAccountDto(student, username);
+                    } catch (StudentNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
                 .collect(Collectors.toList());
 
         return new DataResponseMessage<>("Popülerlik sıralaması başarıyla alındı.", true, topStudents);
+    }
+    public BestPopularityAccount toBestPopularityAccountDto(Student student, String currentUsername) throws StudentNotFoundException {
+        Student currentUser = studentRepository.getByUserNumber(currentUsername);
+        DataResponseMessage<List<String>> dataResponseMessage = followRelationService.getCommonFollowers(currentUsername, student.getUsername());
+
+        List<String> commonFriends = dataResponseMessage.getData().stream().limit(3).toList();
+
+        boolean isFollow = currentUser.getFollowing().stream()
+                .anyMatch(follow -> follow.getFollowed().getId().equals(student.getId()));
+
+        return BestPopularityAccount.builder()
+                .userId(student.getId())
+                .username(student.getUsername())
+                .fullName(student.getFirstName() + " " + student.getLastName())
+                .profilePhoto(student.getProfilePhoto())
+                .popularityScore(student.getPopularityScore())
+                .isPrivate(student.isPrivate())
+                .followerCount(student.getFollowers().size())
+                .postCount(student.getPost().size())
+                .followingCount(student.getFollowing().size())
+                .commonFriends(commonFriends)
+                .isFollow(isFollow)
+                .build();
+
     }
 
     @Override
@@ -816,20 +846,17 @@ public class StudentManager implements StudentService {
         }
 
         DataResponseMessage<List<String>> dataResponseMessage = followRelationService.getCommonFollowers(username, targetStudent.getUsername());
+        boolean isFollowing = student.getFollowing().stream()
+                .anyMatch(followRelation -> followRelation.getFollowed().equals(targetStudent));
 
         List<String> commonFriends = dataResponseMessage.getData();
-        if (targetStudent.isPrivate()) {
-            boolean isFollowing = student.getFollowing().stream()
-                    .anyMatch(followRelation -> followRelation.getFollowed().equals(targetStudent));
+        if (targetStudent.isPrivate() && !isFollowing) {
 
             PrivateAccountDetails privateDetails = studentConverter.privateAccountDto(targetStudent);
             privateDetails.setFollow(isFollowing);
             privateDetails.setCommonFriends(commonFriends);
             return new DataResponseMessage("Hesap detayları başarıyla getirildi.", true, privateDetails);
         }
-
-        boolean isFollowing = student.getFollowing().stream()
-                .anyMatch(followRelation -> followRelation.getFollowed().equals(targetStudent));
 
         PublicAccountDetails publicDetails = studentConverter.publicAccountDto(targetStudent);
         publicDetails.setFollow(isFollowing);

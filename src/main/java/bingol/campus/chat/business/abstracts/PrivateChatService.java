@@ -9,6 +9,7 @@ import bingol.campus.chat.core.response.PrivateChatResponse;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.exceptions.StudentNotFoundException;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,4 +38,6 @@ public interface PrivateChatService {
     DataResponseMessage<List<MessageResponse>> getMessagesFromUserInPrivateChat(String username, Long chatId, Long senderId);
 
     DataResponseMessage<List<MessageResponse>> getLastMessagesInPrivateChat(String username, Long chatId, int limit);
+
+    ResponseEntity<Boolean> isUserOnline(String username, String username1) throws StudentNotFoundException;
 }

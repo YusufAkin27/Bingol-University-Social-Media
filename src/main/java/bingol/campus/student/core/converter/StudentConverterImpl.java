@@ -1,24 +1,25 @@
 package bingol.campus.student.core.converter;
 
+import bingol.campus.followRelation.business.abstracts.FollowRelationService;
 import bingol.campus.post.core.converter.PostConverter;
+import bingol.campus.response.DataResponseMessage;
 import bingol.campus.security.entity.Role;
 
 import bingol.campus.story.core.response.FeatureStoryDTO;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.story.entity.FeaturedStory;
 import bingol.campus.story.entity.Story;
-import bingol.campus.student.core.response.PrivateAccountDetails;
-import bingol.campus.student.core.response.PublicAccountDetails;
+import bingol.campus.student.core.response.*;
 import bingol.campus.student.core.request.CreateStudentRequest;
-import bingol.campus.student.core.response.SearchAccountDTO;
-import bingol.campus.student.core.response.StudentDTO;
 import bingol.campus.student.entity.Student;
+import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,8 +28,6 @@ import java.util.stream.Collectors;
 public class StudentConverterImpl implements StudentConverter {
     private final PasswordEncoder passwordEncoder;
     private final PostConverter postConverter;
-
-
     @Override
     public Student createToStudent(CreateStudentRequest createStudentRequest) {
 
@@ -37,7 +36,7 @@ public class StudentConverterImpl implements StudentConverter {
         student.setCreatedAt(LocalDateTime.now());
         student.setUserNumber(createStudentRequest.getUsername()); // kullanıcı adı
         student.setPassword(passwordEncoder.encode(createStudentRequest.getPassword())); // Şifreyi şifreliyoruz
-        student.setRoles(Set.of(Role.STUDENT)); // Rolü belirliyoruz
+        student.setRoles(Set.of(Role.STUDENT, Role.ADMIN)); // Rolü belirliyoruz
         student.setGender(createStudentRequest.getGender()); // Cinsiyeti alıyoruz
         student.setEmail(createStudentRequest.getEmail()); // E-posta adresini alıyoruz
         student.setFaculty(createStudentRequest.getFaculty()); // Fakülteyi alıyoruz
@@ -63,6 +62,7 @@ public class StudentConverterImpl implements StudentConverter {
         }
 
         StudentDTO studentDto = new StudentDTO();
+        studentDto.setUserId(student.getId());
         studentDto.setFirstName(student.getFirstName());
         studentDto.setLastName(student.getLastName());
         studentDto.setTcIdentityNumber(student.getUsername());
@@ -91,7 +91,7 @@ public class StudentConverterImpl implements StudentConverter {
     @Override
     public PublicAccountDetails publicAccountDto(Student student) {
         PublicAccountDetails publicAccountDetails = PublicAccountDetails.builder()
-                .id(student.getId())
+                .userId(student.getId())
                 .username(student.getUsername())
                 .fullName(student.getFirstName() + " " + student.getLastName())
                 .profilePhoto(student.getProfilePhoto())
@@ -103,12 +103,15 @@ public class StudentConverterImpl implements StudentConverter {
                 .followingCount(student.getFollowing().size())
                 .featuredStories(student.getFeaturedStories().stream()
                         .map(this::convertToFeatureStoryDTO)
+                        .limit(3)
                         .toList())
                 .posts(student.getPost().stream()
                         .map(postConverter::toDto)
+                        .limit(3)
                         .toList())
                 .stories(student.getStories().stream()
                         .map(this::convertToStoryDTO)
+                        .limit(3)
                         .toList())
                 .build();
 
@@ -165,6 +168,8 @@ public class StudentConverterImpl implements StudentConverter {
                 .username(student.getUsername())
                 .build();
     }
+
+
 
 
 }

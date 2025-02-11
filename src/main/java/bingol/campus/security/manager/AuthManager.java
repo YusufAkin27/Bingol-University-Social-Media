@@ -1,5 +1,6 @@
 package bingol.campus.security.manager;
 
+import bingol.campus.config.ChatWebSocketHandler;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.security.dto.*;
 import bingol.campus.security.entity.User;
@@ -15,6 +16,7 @@ import bingol.campus.student.rules.StudentRules;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,8 +31,20 @@ public class AuthManager implements AuthService {
     private final JwtService jwtService;
     private final TokenRepository tokenRepository;
     private final StudentRepository studentRepository;
+    private final SimpMessagingTemplate messagingTemplate; // WebSocket mesajları için gerekli
 
+    @Override
+    @Transactional
+    public ResponseMessage logout(String username) throws UserNotFoundException {
+        Student student = studentRepository.findByUserNumber(username).orElseThrow(UserNotFoundException::new);
+        tokenRepository.deleteAllByUserId(student.getId());
 
+        ChatWebSocketHandler.getOnlineUsers().remove(username);
+
+        messagingTemplate.convertAndSend("/topic/onlineUsers", ChatWebSocketHandler.getOnlineUsers());
+
+        return new ResponseMessage("Çıkış başarılı", true);
+    }
     @Override
     public TokenResponseDTO login(LoginRequestDTO loginRequestDTO) throws NotFoundUserException, UserDeletedException, UserNotActiveException, IncorrectPasswordException, UserRoleNotAssignedException {
         Optional<User> userOptional = userRepository.findByUserNumber(loginRequestDTO.getUsername());
@@ -55,6 +69,11 @@ public class AuthManager implements AuthService {
 
         String accessToken = jwtService.generateAccessToken(user, loginRequestDTO.getIpAddress(), loginRequestDTO.getDeviceInfo());
         String refreshToken = jwtService.generateRefreshToken(user, loginRequestDTO.getIpAddress(), loginRequestDTO.getDeviceInfo());
+
+        ChatWebSocketHandler.getOnlineUsers().add(user.getUserNumber());
+
+        // ✅ WebSocket üzerinden tüm clientlara güncelleme gönderelim
+        messagingTemplate.convertAndSend("/topic/onlineUsers", ChatWebSocketHandler.getOnlineUsers());
 
         return new TokenResponseDTO(accessToken, refreshToken);
     }
@@ -87,14 +106,7 @@ public class AuthManager implements AuthService {
         }
     }
 
-    @Override
-    @Transactional
-    public ResponseMessage logout(String username) throws UserNotFoundException {
-        Student student = studentRepository.findByUserNumber(username).orElseThrow(UserNotFoundException::new );
-        tokenRepository.deleteAllByUserId(student.getId());
-        studentRepository.save(student);
-        return new ResponseMessage("çıkış başarılı",true);
-    }
+
 
 
 }

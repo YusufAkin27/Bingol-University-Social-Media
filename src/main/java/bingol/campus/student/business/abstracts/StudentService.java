@@ -8,12 +8,9 @@ import bingol.campus.post.core.response.PostDTO;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.security.exception.UserNotFoundException;
-import bingol.campus.student.core.response.PublicAccountDetails;
+import bingol.campus.student.core.response.*;
 import bingol.campus.student.core.request.CreateStudentRequest;
-import bingol.campus.student.core.response.StudentDTO;
 import bingol.campus.student.core.request.UpdateStudentProfileRequest;
-import bingol.campus.student.core.response.StudentStatistics;
-import bingol.campus.student.core.response.HomeStoryDTO;
 import bingol.campus.student.entity.enums.Department;
 import bingol.campus.student.entity.enums.Faculty;
 import bingol.campus.student.entity.enums.Grade;
@@ -67,7 +64,7 @@ public interface StudentService {
 
     DataResponseMessage<List<PublicAccountDetails>> getStudentsByGrade(String username, Grade grade, int page) throws StudentNotFoundException;
 
-    DataResponseMessage<List<PublicAccountDetails>> getBestPopularity(String username);
+    DataResponseMessage<List<BestPopularityAccount>> getBestPopularity(String username);
 
     DataResponseMessage accountDetails(String username, Long userId) throws StudentNotFoundException, BlockedByUserException, UserBlockedException;
 

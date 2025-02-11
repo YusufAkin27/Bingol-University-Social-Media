@@ -7,16 +7,25 @@ import bingol.campus.chat.core.request.*;
 import bingol.campus.chat.core.response.GroupChatResponse;
 import bingol.campus.chat.core.response.MessageResponse;
 import bingol.campus.chat.core.response.PrivateChatResponse;
+import bingol.campus.config.ChatWebSocketHandler;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
+import bingol.campus.student.core.converter.StudentConverter;
+import bingol.campus.student.core.response.StudentDTO;
+import bingol.campus.student.entity.Student;
 import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -27,6 +36,22 @@ public class ChatController {
     private final PrivateChatService privateChatService;
 
 
+
+
+    @GetMapping("/online")
+    public ResponseEntity<List<String>> getOnlineUsers(@AuthenticationPrincipal UserDetails userDetails) {
+        userDetails.getUsername();
+        List<String> onlineUsers = new ArrayList<>(ChatWebSocketHandler.getOnlineUsers());
+        onlineUsers.removeIf(s -> s.contains(userDetails.getUsername()));
+        return ResponseEntity.ok(onlineUsers);
+    }
+
+    // ✅ Belirli bir kullanıcı online mı kontrol eden endpoint
+    @GetMapping("/status/{username}")
+    public ResponseEntity<Boolean> isUserOnline(@AuthenticationPrincipal UserDetails userDetails,@PathVariable String username) throws StudentNotFoundException {
+        return privateChatService.isUserOnline(userDetails.getUsername(),username);
+
+    }
     // ✅ Yeni özel sohbet oluştur
     @PostMapping("/private/create/{userId}")
     public DataResponseMessage<PrivateChatResponse> createPrivateChat(@AuthenticationPrincipal UserDetails userDetails,

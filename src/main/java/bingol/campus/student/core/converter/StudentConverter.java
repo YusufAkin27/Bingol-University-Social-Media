@@ -1,11 +1,9 @@
 package bingol.campus.student.core.converter;
 
-import bingol.campus.student.core.response.PrivateAccountDetails;
-import bingol.campus.student.core.response.PublicAccountDetails;
+import bingol.campus.student.core.response.*;
 import bingol.campus.student.core.request.CreateStudentRequest;
-import bingol.campus.student.core.response.SearchAccountDTO;
-import bingol.campus.student.core.response.StudentDTO;
 import bingol.campus.student.entity.Student;
+import bingol.campus.student.exceptions.StudentNotFoundException;
 
 public interface StudentConverter {
     Student createToStudent(CreateStudentRequest createStudentRequest);

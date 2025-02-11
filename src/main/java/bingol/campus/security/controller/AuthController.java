@@ -7,6 +7,9 @@ import bingol.campus.security.dto.TokenResponseDTO;
 import bingol.campus.security.dto.UpdateAccessTokenRequestDTO;
 import bingol.campus.security.exception.*;
 import bingol.campus.security.manager.AuthService;
+import bingol.campus.student.entity.Student;
+import bingol.campus.student.repository.StudentRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -23,6 +26,8 @@ public class AuthController {
     private final AuthService authService;
 
 
+
+
     @PostMapping("/login")
     public TokenResponseDTO login(@RequestBody LoginRequestDTO loginRequestDTO) throws UserNotActiveException, UserRoleNotAssignedException, UserDeletedException, NotFoundUserException, IncorrectPasswordException {
 
@@ -33,8 +38,9 @@ public class AuthController {
     public ResponseEntity<?> updateAccessToken(@RequestBody UpdateAccessTokenRequestDTO updateAccessTokenRequestDTO) throws TokenIsExpiredException, TokenNotFoundException {
         return authService.updateAccessToken(updateAccessTokenRequestDTO);
     }
-    @PostMapping("/logout")
+    @PostMapping("logout")
     public ResponseMessage logout(@AuthenticationPrincipal UserDetails userDetails) throws UserNotFoundException {
-        return authService.logout(userDetails.getUsername());
+      return authService.logout(userDetails.getUsername());
     }
+
 }

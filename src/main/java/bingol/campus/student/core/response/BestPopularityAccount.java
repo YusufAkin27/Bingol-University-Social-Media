@@ -11,15 +11,14 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PublicAccountDetails  {
+@Builder
+public class BestPopularityAccount {
     private long userId;
     private String fullName;
     private String username;
     private String profilePhoto;
-    private String bio;
     private boolean isFollow;
     private List<String> commonFriends;
     private long followingCount;
@@ -27,8 +26,4 @@ public class PublicAccountDetails  {
     private long postCount;
     private boolean isPrivate;
     private long popularityScore;
-    private List<PostDTO> posts;         // Gönderi başlıkları veya içerikleri
-    private List<StoryDTO> stories;       // Hikayeler (Başlıklar veya içerik)
-    private List<FeatureStoryDTO> featuredStories; // Öne çıkan hikayeler
-
 }

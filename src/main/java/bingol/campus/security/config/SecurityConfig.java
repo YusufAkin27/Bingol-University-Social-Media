@@ -30,7 +30,7 @@ public class SecurityConfig {
 
         // Public erişim için yollar
         String[] publicPaths = {
-                "/auth/**",
+                "/auth/login/**",
                 "/v1/api/admin/register",
                 "/v1/api/token/**",
                 "/v1/api/student/sign-up",
@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless yapı
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers(publicPaths).permitAll()
+                        .requestMatchers("/ws/**").permitAll() // WebSocket için izin ver
                         .requestMatchers(adminPaths).hasAuthority(Role.ADMIN.getAuthority())
                         .requestMatchers(studentPaths).hasAuthority(Role.STUDENT.getAuthority())
                         .anyRequest().authenticated()
@@ -74,13 +75,14 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:5000",
-                "http://10.0.2.2:64135",  // Android Emulator (Dart VM Service Portu)
-                "http://10.0.2.2:9101",   // Flutter DevTools için
-                "http://10.0.2.2:54109",  // Flutter Web Portu
-                "http://localhost:54109", // Flutter Web Localhost
-                "http://127.0.0.1:64135", // Dart VM Service Localhost
-                "http://127.0.0.1:9101"   // Flutter DevTools Localhost    // Web/Desktop için
+                "http://localhost:3000",
+                "http://10.0.2.2:64135",
+                "http://10.0.2.2:9101",
+                "http://10.0.2.2:54109",
+                "http://localhost:54109",
+                "http://127.0.0.1:64135",
+                "http://127.0.0.1:9101",
+                "ws://localhost:8080"   // **WebSocket için izin eklendi!**
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
@@ -90,4 +92,5 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
 }

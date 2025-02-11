@@ -13,12 +13,14 @@ import bingol.campus.chat.entity.ChatParticipant;
 import bingol.campus.chat.entity.Message;
 import bingol.campus.chat.entity.PrivateChat;
 import bingol.campus.chat.repository.*;
+import bingol.campus.config.ChatWebSocketHandler;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.entity.Student;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import bingol.campus.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -203,7 +205,6 @@ public class PrivateChatManager implements PrivateChatService {
     }
 
 
-
     @Override
     public DataResponseMessage<MessageResponse> updateMessage(String username, UpdateMessageRequest request) {
         return null;
@@ -242,5 +243,16 @@ public class PrivateChatManager implements PrivateChatService {
     @Override
     public DataResponseMessage<List<MessageResponse>> getLastMessagesInPrivateChat(String username, Long chatId, int limit) {
         return null;
+    }
+
+    @Override
+    public ResponseEntity<Boolean> isUserOnline(String username, String username1) throws StudentNotFoundException {
+        Student student = studentRepository.getByUserNumber(username);
+        Student student1 = studentRepository.getByUserNumber(username1);
+        if (student1==null){
+            return ResponseEntity.ok(false);
+        }
+        boolean isOnline = ChatWebSocketHandler.getOnlineUsers().contains(student1.getUsername());
+        return ResponseEntity.ok(isOnline);
     }
 }

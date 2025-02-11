@@ -121,7 +121,20 @@ public class Student extends User {
     @OneToMany(mappedBy = "uploadedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ChatMedia> mediaFiles = new ArrayList<>(); // Kullanıcının gönderdiği medya dosyaları
 
+    public int getPopularityScore() {
+        return calculatePopularityScore();
+    }
 
+    private int calculatePopularityScore() {
+        int followersCount = followers.size();
+        int likesCount = likes.size();
+        int commentsCount = comments.size();
+        int postsCount = post.size();
+        int storiesCount = stories.size();
+        int featuredStoriesCount = featuredStories.size();
+
+        return followersCount * 5 + likesCount * 2 + commentsCount + postsCount * 3 + storiesCount * 2 + featuredStoriesCount * 4;
+    }
 
 
 }

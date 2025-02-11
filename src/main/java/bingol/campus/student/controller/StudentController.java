@@ -8,6 +8,7 @@ import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 
 import bingol.campus.student.business.abstracts.StudentService;
+import bingol.campus.student.core.response.BestPopularityAccount;
 import bingol.campus.student.core.response.PublicAccountDetails;
 import bingol.campus.student.core.request.CreateStudentRequest;
 import bingol.campus.student.core.response.StudentDTO;
@@ -75,10 +76,6 @@ public class StudentController {
     public ResponseMessage uploadPhoto(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestPart("file") MultipartFile photo) throws IOException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
-        long maxFileSize = 24 * 1024 * 1024;
-        if (photo.getSize() > maxFileSize) {
-            return new ResponseMessage("Dosya boyutu 2MB'den büyük olamaz.", false);
-        }
         return studentService.uploadProfilePhoto(userDetails.getUsername(), photo);
     }
 
@@ -105,7 +102,6 @@ public class StudentController {
     // Profil fotoğrafını silme
     @DeleteMapping("/profile-photo")
     public ResponseMessage deleteProfilePhoto(@AuthenticationPrincipal UserDetails userDetails) throws StudentNotFoundException {
-        // Giriş yapan öğrencinin profil fotoğrafını siler
         return studentService.deleteProfilePhoto(userDetails.getUsername());
     }
 
@@ -152,7 +148,7 @@ public class StudentController {
     }
 
     @GetMapping("/best-popularity")
-    public DataResponseMessage<List<PublicAccountDetails>> getBestPopularity(@AuthenticationPrincipal UserDetails userDetails) {
+    public DataResponseMessage<List<BestPopularityAccount>> getBestPopularity(@AuthenticationPrincipal UserDetails userDetails) {
         return studentService.getBestPopularity(userDetails.getUsername());
     }
 

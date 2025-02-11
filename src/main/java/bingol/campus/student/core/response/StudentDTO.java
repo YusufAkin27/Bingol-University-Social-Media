@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class StudentDTO {
+    private long userId;
     private String firstName;           // Öğrencinin adı
     private String lastName;            // Öğrencinin soyadı
     private String tcIdentityNumber;    // TC Kimlik Numarası

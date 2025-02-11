@@ -6,6 +6,7 @@ import bingol.campus.security.entity.enums.TokenType;
 import bingol.campus.security.exception.TokenIsExpiredException;
 import bingol.campus.security.exception.TokenNotFoundException;
 import bingol.campus.security.repository.TokenRepository;
+import bingol.campus.student.entity.Student;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -92,9 +93,6 @@ public class JwtService {
     }
 
 
-
-
-
     private boolean validateToken(String token, String secret) throws TokenIsExpiredException, TokenNotFoundException {
         try {
             Claims claims = Jwts.parser()
@@ -151,4 +149,13 @@ public class JwtService {
     }
 
 
+    public String extractUsername(String token) {
+        Optional<Token> optionalToken = tokenRepository.findByTokenValue(token);
+        Token token1;
+        if (optionalToken.isEmpty()) {
+            return null;
+        }
+        token1 = optionalToken.get();
+        return token1.getUser().getUsername();
+    }
 }
