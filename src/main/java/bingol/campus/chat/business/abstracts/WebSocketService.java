@@ -1,6 +1,6 @@
 package bingol.campus.chat.business.abstracts;
 
-import bingol.campus.config.ChatWebSocketHandler;
+import bingol.campus.chat.config.ChatWebSocketHandler;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class WebSocketService {

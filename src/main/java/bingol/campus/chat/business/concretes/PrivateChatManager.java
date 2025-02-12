@@ -5,7 +5,6 @@ import bingol.campus.chat.business.abstracts.WebSocketService;
 import bingol.campus.chat.core.request.DeleteMessageRequest;
 import bingol.campus.chat.core.request.SendMessageRequest;
 import bingol.campus.chat.core.request.UpdateMessageRequest;
-import bingol.campus.chat.core.response.GroupChatResponse;
 import bingol.campus.chat.core.response.MessageResponse;
 import bingol.campus.chat.core.response.PrivateChatResponse;
 import bingol.campus.chat.entity.Chat;
@@ -13,14 +12,17 @@ import bingol.campus.chat.entity.ChatParticipant;
 import bingol.campus.chat.entity.Message;
 import bingol.campus.chat.entity.PrivateChat;
 import bingol.campus.chat.repository.*;
-import bingol.campus.config.ChatWebSocketHandler;
+import bingol.campus.chat.config.ChatWebSocketHandler;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.entity.Student;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 import bingol.campus.student.repository.StudentRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,43 +40,39 @@ public class PrivateChatManager implements PrivateChatService {
     private final ChatMediaRepository chatMediaRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final WebSocketService webSocketService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    @Override
+
     @Transactional
-    public DataResponseMessage<PrivateChatResponse> createPrivateChat(String username, Long userId) throws StudentNotFoundException {
-        Student currentUser = studentRepository.getByUserNumber(username);
-        Student targetUser = studentRepository.findById(userId)
-                .orElseThrow(StudentNotFoundException::new);
+    public PrivateChatResponse createPrivateChat(String username, String jsonPayload) throws StudentNotFoundException {
+        try {
+            // JSON içinden "participantUsername" değerini al
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(jsonPayload);
+            String participantUsername = jsonNode.get("participantUsername").asText();
 
-        Optional<PrivateChat> existingChat = privateChatRepository.findByParticipants(currentUser, targetUser);
-        if (existingChat.isPresent()) {
-            return new DataResponseMessage<>("Mevcut sohbet bulundu.", true, mapToChatResponse(existingChat.get()));
+            // Kullanıcıları bul
+            Student currentUser = studentRepository.getByUserNumber(username);
+            Student targetUser = studentRepository.getByUserNumber(participantUsername);
+
+            // Eğer bu iki kullanıcı arasında zaten bir özel sohbet varsa, direkt onu döndür
+            Optional<PrivateChat> existingChat = privateChatRepository.findByParticipants(currentUser, targetUser);
+            if (existingChat.isPresent()) {
+                return mapToChatResponse(existingChat.get());
+            }
+
+            // Yeni sohbet oluştur
+            PrivateChat privateChat = new PrivateChat();
+            privateChat.setChatName(targetUser.getFirstName() + " " + targetUser.getLastName());
+            privateChat.setChatPhoto(targetUser.getProfilePhoto());
+            privateChat.setCreatedAt(LocalDateTime.now());
+            privateChat.setLastActiveAt(LocalDateTime.now());
+            privateChatRepository.save(privateChat);
+
+            return mapToChatResponse(privateChat);
+        } catch (Exception e) {
+            throw new RuntimeException("Geçersiz JSON formatı: " + e.getMessage());
         }
-
-        // 2️⃣ - Yeni sohbet oluştur
-        Chat newChat = new Chat();
-        newChat.setCreatedAt(LocalDateTime.now());
-        newChat.setLastActiveAt(LocalDateTime.now());
-        chatRepository.save(newChat);
-
-        PrivateChat privateChat = new PrivateChat();
-        privateChat.setChatName(targetUser.getFirstName() + " " + targetUser.getLastName()); // Sohbet adını karşıdaki kişinin adı yap
-        privateChat.setChatPhoto(targetUser.getProfilePhoto()); // Profil fotoğrafı olarak karşıdakinin profilini kullan
-        privateChatRepository.save(privateChat);
-
-        // 3️⃣ - Katılımcıları ekle
-        ChatParticipant participant1 = new ChatParticipant();
-        participant1.setJoinedAt(LocalDateTime.now());
-        participant1.setChat(privateChat);
-        participant1.setStudent(currentUser);
-        ChatParticipant participant2 = new ChatParticipant();
-        participant2.setStudent(targetUser);
-        participant2.setChat(privateChat);
-        participant1.setJoinedAt(LocalDateTime.now());
-        chatParticipantRepository.saveAll(List.of(participant1, participant2));
-
-
-        return new DataResponseMessage<>("Yeni özel sohbet oluşturuldu.", true, mapToChatResponse(privateChat));
     }
 
     private PrivateChatResponse mapToChatResponse(PrivateChat privateChat) {
@@ -96,10 +94,10 @@ public class PrivateChatManager implements PrivateChatService {
 
 
     @Override
-    public DataResponseMessage<List<PrivateChatResponse>> getPrivateChats(String username) throws StudentNotFoundException {
+    public List<PrivateChatResponse> getPrivateChats(String username) throws StudentNotFoundException {
         Student student = studentRepository.getByUserNumber(username);
 
-        List<PrivateChatResponse> privateChats = student.getChatParticipants().stream()
+        return student.getChatParticipants().stream()
                 .map(ChatParticipant::getChat)
                 .filter(chat -> chat instanceof PrivateChat)
                 .map(chat -> (PrivateChat) chat)
@@ -112,25 +110,23 @@ public class PrivateChatManager implements PrivateChatService {
                         .participantUsername(username)
                         .build())
                 .toList();
-
-        return new DataResponseMessage<>("Özel sohbetler başarıyla getirildi", true, privateChats);
     }
 
     @Override
-    public DataResponseMessage<List<MessageResponse>> getPrivateMessages(String username, Long chatId) throws StudentNotFoundException {
+    public List<MessageResponse> getPrivateMessages(String username, Long chatId) throws StudentNotFoundException {
         Student student = studentRepository.getByUserNumber(username);
 
         boolean isParticipant = student.getChatParticipants().stream()
                 .anyMatch(participant -> participant.getChat().getId().equals(chatId));
 
         if (!isParticipant) {
-            return new DataResponseMessage<>("Bu sohbete erişiminiz yok!", false, null);
+            throw new IllegalArgumentException("Bu sohbete erişiminiz yok!");
         }
 
         PrivateChat privateChat = (PrivateChat) chatRepository.findById(chatId)
                 .orElseThrow(() -> new IllegalArgumentException("Sohbet bulunamadı"));
 
-        List<MessageResponse> messages = privateChat.getMessages().stream()
+        return privateChat.getMessages().stream()
                 .map(message -> MessageResponse.builder()
                         .messageId(message.getId())
                         .username(message.getSender().getUserNumber())
@@ -139,33 +135,29 @@ public class PrivateChatManager implements PrivateChatService {
                         .isRead(message.isRead())
                         .build())
                 .toList();
-
-        return new DataResponseMessage<>("Özel sohbet mesajları başarıyla getirildi", true, messages);
     }
 
 
-    @Override
-    public DataResponseMessage<MessageResponse> sendPrivateMessage(String username, SendMessageRequest request) {
-        Student sender = studentRepository.findById(request.getSenderId())
-                .orElseThrow(() -> new IllegalArgumentException("Gönderici kullanıcı bulunamadı"));
 
+    @Override
+    public MessageResponse sendPrivateMessage(String username, SendMessageRequest request) throws StudentNotFoundException {
+        Student sender = studentRepository.getByUserNumber(username);
         PrivateChat privateChat;
 
+        // Eğer chatId gönderilmemişse yeni sohbet oluştur
         if (request.getChatId() == null || request.getChatId() == 0) {
             privateChat = new PrivateChat();
             privateChat.setCreatedAt(LocalDateTime.now());
             privateChat.setLastActiveAt(LocalDateTime.now());
-            privateChat.setChatName("Özel Sohbet"); // Varsayılan isim
+            privateChat.setChatName("Özel Sohbet");
 
             privateChat = chatRepository.save(privateChat);
 
             ChatParticipant senderParticipant = new ChatParticipant(null, privateChat, sender, LocalDateTime.now());
             chatParticipantRepository.save(senderParticipant);
 
-            // Sohbetin diğer katılımcısını belirleme (Burada mantığa göre değişebilir)
-            Student receiver = studentRepository.findByUserNumber(username)
-                    .orElseThrow(() -> new IllegalArgumentException("Alıcı bulunamadı"));
-
+            // Alıcıyı belirle
+            Student receiver = studentRepository.getByUserNumber(request.getUsername());
             ChatParticipant receiverParticipant = new ChatParticipant(null, privateChat, receiver, LocalDateTime.now());
             chatParticipantRepository.save(receiverParticipant);
         } else {
@@ -186,23 +178,33 @@ public class PrivateChatManager implements PrivateChatService {
         privateChat.setLastMessage(message);
         chatRepository.save(privateChat);
 
-        MessageResponse messageResponse = new MessageResponse(
+        return new MessageResponse(
                 message.getId(),
                 sender.getUserNumber(),
                 message.getContent(),
                 message.getTimestamp(),
                 message.isRead()
         );
+    }
 
-        List<ChatParticipant> participants = privateChat.getParticipants();
-        for (ChatParticipant participant : participants) {
-            if (!participant.getStudent().equals(sender)) {
-                webSocketService.sendMessageToUser(participant.getStudent().getUserNumber(), messageResponse.getContent());
-            }
+    public List<ChatParticipant> getChatParticipants(Long chatId) {
+        return chatParticipantRepository.findByChatId(chatId);
+    }
+
+    @Override
+    public boolean isUserInChat(String name, Long chatId) {
+        Optional<Chat> chatOptional = chatRepository.findById(chatId);
+
+        if (chatOptional.isEmpty()) {
+            return false;
         }
 
-        return new DataResponseMessage<>("Mesaj başarıyla gönderildi", true, messageResponse);
+        Chat chat = chatOptional.get();
+
+        return chat.getParticipants().stream()
+                .anyMatch(p -> p.getStudent().getUsername().equals(name)); // Kullanıcı varsa true döndür
     }
+
 
 
     @Override
@@ -255,4 +257,6 @@ public class PrivateChatManager implements PrivateChatService {
         boolean isOnline = ChatWebSocketHandler.getOnlineUsers().contains(student1.getUsername());
         return ResponseEntity.ok(isOnline);
     }
+
+
 }

@@ -1,4 +1,4 @@
-package bingol.campus.config;
+package bingol.campus.chat.config;
 
 import bingol.campus.security.service.JwtService;
 import lombok.RequiredArgsConstructor;

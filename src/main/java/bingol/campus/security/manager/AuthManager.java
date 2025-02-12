@@ -1,6 +1,6 @@
 package bingol.campus.security.manager;
 
-import bingol.campus.config.ChatWebSocketHandler;
+import bingol.campus.chat.config.ChatWebSocketHandler;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.security.dto.*;
 import bingol.campus.security.entity.User;
@@ -12,7 +12,6 @@ import bingol.campus.security.service.JwtService;
 import bingol.campus.student.entity.Student;
 
 import bingol.campus.student.repository.StudentRepository;
-import bingol.campus.student.rules.StudentRules;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,7 +71,6 @@ public class AuthManager implements AuthService {
 
         ChatWebSocketHandler.getOnlineUsers().add(user.getUserNumber());
 
-        // ✅ WebSocket üzerinden tüm clientlara güncelleme gönderelim
         messagingTemplate.convertAndSend("/topic/onlineUsers", ChatWebSocketHandler.getOnlineUsers());
 
         return new TokenResponseDTO(accessToken, refreshToken);

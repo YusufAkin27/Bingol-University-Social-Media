@@ -118,6 +118,10 @@ public class StudentController {
         return studentService.search(userDetails.getUsername(), query, page);
     }
 
+    @GetMapping("/find")
+    public StudentDTO find(@AuthenticationPrincipal UserDetails userDetails,@RequestParam String username) throws StudentNotFoundException {
+        return studentService.find(userDetails.getUsername(),username);
+    }
     @GetMapping("/account-details/{userId}")
     public DataResponseMessage accountDetails(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long userId) throws StudentNotFoundException, UserBlockedException, BlockedByUserException {
         return studentService.accountDetails(userDetails.getUsername(), userId);

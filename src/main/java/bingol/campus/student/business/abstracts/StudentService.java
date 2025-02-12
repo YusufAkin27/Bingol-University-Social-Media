@@ -89,4 +89,6 @@ public interface StudentService {
 
     DataResponseMessage<List<StudentDTO>> getModerators(String username) throws StudentNotFoundException, UnauthorizedException;
 
+    StudentDTO find(String username, String username1) throws StudentNotFoundException;
+
 }

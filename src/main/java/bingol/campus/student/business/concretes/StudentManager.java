@@ -286,6 +286,12 @@ public class StudentManager implements StudentService {
         return new DataResponseMessage<>("modereator listesi", true, studentDTOS);
     }
 
+    @Override
+    public StudentDTO find(String username, String username1) throws StudentNotFoundException {
+        Student student = studentRepository.getByUserNumber(username1);
+        return studentConverter.toDto(student);
+    }
+
 
     public Student findBySchoolNumber(String schoolNumber) throws StudentNotFoundException {
         return Optional.ofNullable(studentRepository.getByUserNumber(schoolNumber))
@@ -799,6 +805,7 @@ public class StudentManager implements StudentService {
 
         return new DataResponseMessage<>("Popülerlik sıralaması başarıyla alındı.", true, topStudents);
     }
+
     public BestPopularityAccount toBestPopularityAccountDto(Student student, String currentUsername) throws StudentNotFoundException {
         Student currentUser = studentRepository.getByUserNumber(currentUsername);
         DataResponseMessage<List<String>> dataResponseMessage = followRelationService.getCommonFollowers(currentUsername, student.getUsername());

@@ -6,6 +6,7 @@ import bingol.campus.chat.core.request.UpdateMessageRequest;
 import bingol.campus.chat.core.response.GroupChatResponse;
 import bingol.campus.chat.core.response.MessageResponse;
 import bingol.campus.chat.core.response.PrivateChatResponse;
+import bingol.campus.chat.entity.ChatParticipant;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.exceptions.StudentNotFoundException;
@@ -15,13 +16,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface PrivateChatService {
-    DataResponseMessage<PrivateChatResponse> createPrivateChat(String username, Long userId) throws StudentNotFoundException;
+    PrivateChatResponse createPrivateChat(String username, String username1) throws StudentNotFoundException;
 
-    DataResponseMessage<List<PrivateChatResponse>> getPrivateChats(String username) throws StudentNotFoundException;
+    List<PrivateChatResponse> getPrivateChats(String username) throws StudentNotFoundException;
 
-    DataResponseMessage<List<MessageResponse>> getPrivateMessages(String username, Long chatId) throws StudentNotFoundException;
+    List<MessageResponse> getPrivateMessages(String username, Long chatId) throws StudentNotFoundException;
 
-    DataResponseMessage<MessageResponse> sendPrivateMessage(String username, SendMessageRequest request);
+    MessageResponse sendPrivateMessage(String username, SendMessageRequest request) throws StudentNotFoundException;
 
     DataResponseMessage<MessageResponse> updateMessage(String username, UpdateMessageRequest request);
 
@@ -40,4 +41,8 @@ public interface PrivateChatService {
     DataResponseMessage<List<MessageResponse>> getLastMessagesInPrivateChat(String username, Long chatId, int limit);
 
     ResponseEntity<Boolean> isUserOnline(String username, String username1) throws StudentNotFoundException;
+
+    List<ChatParticipant> getChatParticipants(Long chatId);
+
+    boolean isUserInChat(String name, Long chatId);
 }
