@@ -1,47 +1,44 @@
 package bingol.campus.chat.entity;
 
-import bingol.campus.chat.entity.Chat;
 import bingol.campus.student.entity.Student;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "messages")
 public class Message {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
+    private MessageType type; // TEXT, IMAGE, VIDEO, FILE, STICKER
+
+    private String content; // Metin mesajı
+
+    private LocalDateTime sentTime;
+    private boolean isRead;
+
     @ManyToOne
     @JoinColumn(name = "sender_id", nullable = false)
-    @JsonIgnore
-    private Student sender; // Mesajı gönderen kişi
+    private Student sender;
 
     @ManyToOne
     @JoinColumn(name = "chat_id", nullable = false)
-    @JsonIgnore
-    private Chat chat; // Mesajın ait olduğu sohbet
+    private Chat chat;
 
-    private String content; // Mesaj içeriği (metin)
-    private  boolean deletedForAll=false;
+    @OneToOne
+    @JoinColumn(name = "replied_message_id") // Yanıtlanan mesaj
+    private Message repliedMessage;
 
-    private LocalDateTime timestamp; // Mesajın gönderildiği zaman
-
-    private boolean isRead = false; // Mesajın okunup okunmadığını belirten durum
-
-    @ManyToOne
-    @JoinColumn(name = "response_to_message_id")
-    private Message responseTo; // Yanıtlanan mesaj (Bu alan bir mesajın yanıtını tutacak)
-
-    @OneToMany(mappedBy = "responseTo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Message> responses; // Bu mesajın yanıtları (Yanıtlar veritabanında kaydedilecek)
+    @OneToOne(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ChatMedia mediaFile;
 }

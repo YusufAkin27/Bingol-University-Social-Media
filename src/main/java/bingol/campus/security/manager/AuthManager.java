@@ -1,6 +1,5 @@
 package bingol.campus.security.manager;
 
-import bingol.campus.chat.config.ChatWebSocketHandler;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.security.dto.*;
 import bingol.campus.security.entity.User;
@@ -38,9 +37,6 @@ public class AuthManager implements AuthService {
         Student student = studentRepository.findByUserNumber(username).orElseThrow(UserNotFoundException::new);
         tokenRepository.deleteAllByUserId(student.getId());
 
-        ChatWebSocketHandler.getOnlineUsers().remove(username);
-
-        messagingTemplate.convertAndSend("/topic/onlineUsers", ChatWebSocketHandler.getOnlineUsers());
 
         return new ResponseMessage("Çıkış başarılı", true);
     }
@@ -69,9 +65,6 @@ public class AuthManager implements AuthService {
         String accessToken = jwtService.generateAccessToken(user, loginRequestDTO.getIpAddress(), loginRequestDTO.getDeviceInfo());
         String refreshToken = jwtService.generateRefreshToken(user, loginRequestDTO.getIpAddress(), loginRequestDTO.getDeviceInfo());
 
-        ChatWebSocketHandler.getOnlineUsers().add(user.getUserNumber());
-
-        messagingTemplate.convertAndSend("/topic/onlineUsers", ChatWebSocketHandler.getOnlineUsers());
 
         return new TokenResponseDTO(accessToken, refreshToken);
     }

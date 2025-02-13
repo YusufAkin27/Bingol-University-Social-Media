@@ -6,19 +6,25 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChatMedia {
+public class PinnedMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @OneToOne
+    @JoinColumn(name = "chat_id", nullable = false)
+    private Chat chat;
+
+    @OneToOne
     @JoinColumn(name = "message_id", nullable = false)
     private Message message;
 
-    private String mediaUrl; // Dosyanın kaydedildiği yer (S3, Firebase Storage vb.)
+    private LocalDateTime pinnedAt;
 }

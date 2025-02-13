@@ -1,5 +1,6 @@
 package bingol.campus.chat.entity;
 
+import bingol.campus.student.entity.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,14 +12,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChatMedia {
+public class DeletedMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "message_id", nullable = false)
     private Message message;
 
-    private String mediaUrl; // Dosyanın kaydedildiği yer (S3, Firebase Storage vb.)
+    @ManyToOne
+    @JoinColumn(name = "student_id", nullable = false)
+    private Student student; // Mesajı silen kullanıcı
+
+    private boolean deletedForEveryone; // Herkesten mi silindi?
 }

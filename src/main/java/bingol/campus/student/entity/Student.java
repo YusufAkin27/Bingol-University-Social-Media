@@ -1,29 +1,23 @@
 package bingol.campus.student.entity;
 
-
 import bingol.campus.blockRelation.entity.BlockRelation;
-
-import bingol.campus.chat.entity.ChatMedia;
-import bingol.campus.chat.entity.ChatParticipant;
-import bingol.campus.chat.entity.Message;
+import bingol.campus.chat.entity.*;
 import bingol.campus.comment.entity.Comment;
 import bingol.campus.followRelation.entity.FollowRelation;
 import bingol.campus.friendRequest.entity.FriendRequest;
 import bingol.campus.like.entity.Like;
 import bingol.campus.log.entity.Log;
 import bingol.campus.verificationToken.VerificationToken;
-
 import bingol.campus.post.entity.Post;
 import bingol.campus.story.entity.FeaturedStory;
 import bingol.campus.story.entity.Story;
 import bingol.campus.student.entity.enums.Department;
 import bingol.campus.student.entity.enums.Faculty;
 import bingol.campus.student.entity.enums.Grade;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.*;
 import bingol.campus.security.entity.User;
 
+import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -107,19 +101,24 @@ public class Student extends User {
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Log> logs = new ArrayList<>();
-    // enum rozetler
-    //Zaman Bazlı İçerik Temaları: Belirli dönemlerde (mevsim, tatil vb.) veya kullanıcının ilgi alanına göre otomatik değişen tema ve arayüz seçenekleri.
+
+    @ManyToMany(mappedBy = "participants")
+    private List<Chat> chats;
+
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Message> messages;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<ChatParticipant> chatParticipants = new ArrayList<>(); // Kullanıcının katıldığı sohbetler
+    private List<PinnedMessage> pinnedMessages = new ArrayList<>();
 
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<Message> messages = new ArrayList<>(); // Kullanıcının gönderdiği mesajlar
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<DeletedMessage> deletedMessages = new ArrayList<>();
 
-    @OneToMany(mappedBy = "uploadedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ChatMedia> mediaFiles = new ArrayList<>(); // Kullanıcının gönderdiği medya dosyaları
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ChatMedia> chatMedia = new ArrayList<>();
+
+    @OneToOne(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private OnlineStatus onlineStatus;
 
     public int getPopularityScore() {
         return calculatePopularityScore();
