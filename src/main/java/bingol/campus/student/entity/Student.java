@@ -1,6 +1,7 @@
 package bingol.campus.student.entity;
 
 import bingol.campus.blockRelation.entity.BlockRelation;
+
 import bingol.campus.chat.entity.*;
 import bingol.campus.comment.entity.Comment;
 import bingol.campus.followRelation.entity.FollowRelation;
@@ -18,6 +19,7 @@ import bingol.campus.security.entity.User;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -102,24 +104,26 @@ public class Student extends User {
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Log> logs = new ArrayList<>();
 
-    @ManyToMany(mappedBy = "participants")
-    private List<Chat> chats;
-
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Message> messages;
+    private Boolean showLastSeen; // Kullanıcı son görülmesini göstermek istiyor mu?
+    private LocalDateTime lastSeenAt; // Son görülme zamanı
+    private Boolean isOnline; // Kullanıcının anlık çevrimiçi durumu
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<PinnedMessage> pinnedMessages = new ArrayList<>();
+    private List<ChatParticipant> chatParticipants = new ArrayList<>();
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<DeletedMessage> deletedMessages = new ArrayList<>();
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Message> messages = new ArrayList<>();
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ChatMedia> chatMedia = new ArrayList<>();
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Notification> notifications = new ArrayList<>();
 
-    @OneToOne(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private OnlineStatus onlineStatus;
+    @OneToMany
+    @JoinTable(name = "student_private_chats", joinColumns = @JoinColumn(name = "student_id"), inverseJoinColumns = @JoinColumn(name = "chat_id"))
+    private List<PrivateChat> privateChats = new ArrayList<>();
 
+    @OneToMany
+    @JoinTable(name = "student_group_chats", joinColumns = @JoinColumn(name = "student_id"), inverseJoinColumns = @JoinColumn(name = "chat_id"))
+    private List<GroupChat> groupChats = new ArrayList<>();
     public int getPopularityScore() {
         return calculatePopularityScore();
     }

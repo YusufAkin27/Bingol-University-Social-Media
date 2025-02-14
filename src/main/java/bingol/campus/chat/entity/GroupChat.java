@@ -8,22 +8,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
+@Entity
+@Table(name = "group_chats")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Inheritance(strategy = InheritanceType.JOINED)
-public abstract class Chat {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String chatName;
-    private String chatPhoto;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
+public class GroupChat extends Chat {
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Message> messages = new ArrayList<>();
+    private List<ChatParticipant> participants = new ArrayList<>();
 }

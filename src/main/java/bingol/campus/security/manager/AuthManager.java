@@ -29,7 +29,6 @@ public class AuthManager implements AuthService {
     private final JwtService jwtService;
     private final TokenRepository tokenRepository;
     private final StudentRepository studentRepository;
-    private final SimpMessagingTemplate messagingTemplate; // WebSocket mesajları için gerekli
 
     @Override
     @Transactional

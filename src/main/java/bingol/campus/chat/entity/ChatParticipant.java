@@ -3,26 +3,30 @@ package bingol.campus.chat.entity;
 import bingol.campus.student.entity.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "chat_participants")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class OnlineStatus {
+public class ChatParticipant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
+    @ManyToOne
+    @JoinColumn(name = "chat_id", nullable = false)
+    private Chat chat;
+
+    @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    private boolean isOnline;
-    private LocalDateTime lastSeen; // Son görülme zamanı
+    private LocalDateTime lastSeenAt;
+    private Boolean isAdmin;
+    private Boolean notificationsEnabled;
 }
