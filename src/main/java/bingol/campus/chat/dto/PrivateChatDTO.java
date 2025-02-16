@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class PrivateChatDTO {
-    private long chatId;
+    private UUID chatId;
 
     private String chatName;
     private String chatPhoto;

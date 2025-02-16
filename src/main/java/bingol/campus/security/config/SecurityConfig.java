@@ -57,7 +57,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless yapı
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers(publicPaths).permitAll()
-                        .requestMatchers( "/ws-chat/**").permitAll() // WebSocket için izin ver
+                        .requestMatchers("/ws/**").permitAll()  // WebSocket için izin ver
                         .requestMatchers(adminPaths).hasAuthority(Role.ADMIN.getAuthority())
                         .requestMatchers(studentPaths).hasAuthority(Role.STUDENT.getAuthority())
                         .anyRequest().authenticated()

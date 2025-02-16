@@ -1,6 +1,5 @@
 package bingol.campus.chat.entity;
 
-import bingol.campus.student.entity.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,13 +11,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PrivateChat extends Chat {
-    @ManyToOne
-    @JoinColumn(name = "participant1_id", nullable = false)
-    private ChatParticipant participant1;
 
-    @ManyToOne
-    @JoinColumn(name = "participant2_id", nullable = false)
-    private ChatParticipant participant2;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "sender_id", referencedColumnName = "id")
+    private ChatParticipant sender;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "receiver_id", referencedColumnName = "id")
+    private ChatParticipant receiver;
 }
+
 
 

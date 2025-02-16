@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -16,8 +17,9 @@ import java.util.List;
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Chat {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(generator = "UUID")
+    @Column(updatable = false, nullable = false)
+    private UUID id;
 
     private String chatName;
     private String chatPhoto;

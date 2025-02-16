@@ -34,6 +34,11 @@ import java.util.List;
 @Table(name = "students")
 public class Student extends User {
 
+
+    private Boolean showLastSeen; // Kullanıcı son görülmesini göstermek istiyor mu?
+    private LocalDateTime lastSeenAt; // Son görülme zamanı
+    private Boolean isOnline; // Kullanıcının anlık çevrimiçi durumu
+
     private String firstName;
     private String lastName;
     private String email;
@@ -104,9 +109,6 @@ public class Student extends User {
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Log> logs = new ArrayList<>();
 
-    private Boolean showLastSeen; // Kullanıcı son görülmesini göstermek istiyor mu?
-    private LocalDateTime lastSeenAt; // Son görülme zamanı
-    private Boolean isOnline; // Kullanıcının anlık çevrimiçi durumu
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ChatParticipant> chatParticipants = new ArrayList<>();
