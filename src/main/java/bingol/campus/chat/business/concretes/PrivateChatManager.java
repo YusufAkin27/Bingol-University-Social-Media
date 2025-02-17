@@ -4,27 +4,30 @@ import bingol.campus.chat.business.abstracts.PrivateChatService;
 import bingol.campus.chat.converter.ChatConverter;
 import bingol.campus.chat.dto.MessageDTO;
 import bingol.campus.chat.dto.PrivateChatDTO;
-import bingol.campus.chat.entity.ChatParticipant;
-import bingol.campus.chat.entity.Message;
-import bingol.campus.chat.entity.Notification;
-import bingol.campus.chat.entity.PrivateChat;
-import bingol.campus.chat.exceptions.PrivateChatNotFoundException;
+import bingol.campus.chat.entity.*;
+import bingol.campus.chat.exceptions.*;
 import bingol.campus.chat.repository.*;
 import bingol.campus.chat.request.DeleteMessageRequest;
 import bingol.campus.chat.request.EditMessageRequest;
 import bingol.campus.chat.request.SendMessageRequest;
+import bingol.campus.chat.request.UpdateMessageStatusRequest;
+import bingol.campus.config.MediaUploadService;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
 import bingol.campus.student.entity.Student;
-import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.exceptions.*;
 import bingol.campus.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +40,7 @@ public class PrivateChatManager implements PrivateChatService {
     private final ChatParticipantRepository chatParticipantRepository;
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final MediaUploadService mediaUploadService;
 
     @Override
     public DataResponseMessage sendPrivateMessage(String username, SendMessageRequest sendMessageRequest) throws StudentNotFoundException, PrivateChatNotFoundException {
@@ -152,22 +156,146 @@ public class PrivateChatManager implements PrivateChatService {
     }
 
     @Override
-    public ResponseMessage editMessage(String username, EditMessageRequest editMessageRequest) {
+    @Transactional
+    public ResponseMessage editMessage(String username, EditMessageRequest editMessageRequest) throws MessageNotFoundException, StudentNotFoundException, PrivateChatNotFoundException, MessageDoesNotBelongException, MessageDoesNotBelongStudentException {
+        Student student = studentRepository.getByUserNumber(username);
+        Message message = messageRepository.findById(editMessageRequest.getMessageId()).orElseThrow(MessageNotFoundException::new);
+        PrivateChat privateChat = privateChatRepository.findById(editMessageRequest.getChatId()).orElseThrow(PrivateChatNotFoundException::new);
+
+        if (!message.getChat().getId().equals(privateChat.getId())) {
+            throw new MessageDoesNotBelongException();
+        }
+        if (!message.getSender().equals(student)) {
+            throw new MessageDoesNotBelongStudentException();
+        }
+
+        message.setContent(editMessageRequest.getContent());
+        message.setUpdatedAt(LocalDateTime.now());
+        message.setIsEdited(true);
+        return new ResponseMessage("Message edited successfully", true);
+    }
+
+    @Override
+    @Transactional
+    public ResponseMessage deleteMessage(String username, DeleteMessageRequest deleteMessageRequest) throws MessageDoesNotBelongStudentException, MessageDoesNotBelongException, StudentNotFoundException, MessageNotFoundException, PrivateChatNotFoundException {
+        Student student = studentRepository.getByUserNumber(username);
+        Message message = messageRepository.findById(deleteMessageRequest.getMessageId()).orElseThrow(MessageNotFoundException::new);
+        PrivateChat privateChat = privateChatRepository.findById(deleteMessageRequest.getChatId()).orElseThrow(PrivateChatNotFoundException::new);
+        if (!message.getChat().getId().equals(privateChat.getId())) {
+            throw new MessageDoesNotBelongException();
+        }
+        if (!message.getSender().equals(student)) {
+            throw new MessageDoesNotBelongStudentException();
+        }
+        message.setIsDeleted(true);
+        message.setIsActive(false);
+        //kullanıcı yalnızca aktif mesajları görebilir
+        return new ResponseMessage("Message deleted successfully", true);
+    }
+
+    @Override
+    @Transactional
+    public ResponseMessage deleteChat(String username, UUID chatId) throws ChatNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.getByUserNumber(username);
+        Chat chat = chatRepository.findById(chatId).orElseThrow(ChatNotFoundException::new);
+        if (student.getChatParticipants().stream().filter(p -> p.getChat().getId().equals(chatId)).findFirst().isEmpty()) {
+            throw new ChatNotFoundException();
+        }
+        student.getGroupChats().removeIf(p -> p.getId().equals(chatId));
+        student.getPrivateChats().removeIf(p -> p.getId().equals(chatId));
+        student.getPinnedChats().removeIf(p -> p.getId().equals(chatId));
+        student.getArchiveChats().removeIf(p -> p.getId().equals(chatId));
+        return new ResponseMessage("Chat deleted successfully", true);
+    }
+
+    @Override
+    public DataResponseMessage<List<String>> getReadReceipts(String username, UUID messageId) throws StudentNotFoundException, MessageNotFoundException, MessageDoesNotBelongStudentException, MessageNotActiveException, MessageDeletedException {
+        Student student = studentRepository.getByUserNumber(username);
+        Message message = messageRepository.findById(messageId).orElseThrow(MessageNotFoundException::new);
+        if (!message.getSender().equals(student)) {
+            throw new MessageDoesNotBelongStudentException();
+        }
+        if (!message.getIsActive()) {
+            throw new MessageNotActiveException();
+        }
+        if (message.getIsDeleted()) {
+            throw new MessageDeletedException();
+        }
+
+        List<String> usernames = new ArrayList<>();
+        for (Long id : message.getSeenBy()) {
+            usernames.add(Objects.requireNonNull(studentRepository.findById(id).orElse(null)).getUserNumber());
+        }
+
+        return new DataResponseMessage<>("Read receipts fetched successfully", true, usernames);
+    }
+
+    @Override
+    @Transactional
+    public DataResponseMessage<MessageDTO> sendPrivateFiles(String username, SendMessageRequest sendMessageRequest, MultipartFile[] files) throws PrivateChatNotFoundException, StudentNotFoundException, PrivateChatParticipantNotFoundException, OnlyPhotosAndVideosException, PhotoSizeLargerException, IOException, VideoSizeLargerException, FileFormatCouldNotException {
+        Student student = studentRepository.getByUserNumber(username);
+        PrivateChat privateChat = privateChatRepository.findById(sendMessageRequest.getChatId()).orElseThrow(PrivateChatNotFoundException::new);
+        if (student.getChatParticipants().stream().filter(p -> p.getChat().getId().equals(privateChat.getId())).findFirst().isEmpty()) {
+            throw new PrivateChatParticipantNotFoundException();
+        }
+        List<CompletableFuture<String>> mediaUrls = new ArrayList<>();
+        for (MultipartFile file : files) {
+            mediaUrls.add(mediaUploadService.uploadAndOptimizeMedia(file));
+        }
+        List<String> uploadedUrls = mediaUrls.stream()
+                .map(CompletableFuture::join)
+                .toList();
+        Message message = new Message();
+        message.setChat(privateChat);
+        message.setSender(student);
+        message.setContent(sendMessageRequest.getContent());
+        message.setMediaUrls(uploadedUrls);
+        message.setCreatedAt(LocalDateTime.now());
+        student.getMessages().add(message);
+        privateChat.getMessages().add(message);
+        messageRepository.save(message);
+        privateChatRepository.save(privateChat);
+        return new DataResponseMessage<>("Files sent successfully", true, chatConverter.toMessageDTO(message));
+    }
+
+    @Override
+    public ResponseMessage updateMessageStatus(String username, UpdateMessageStatusRequest updateMessageStatusRequest) {
         return null;
     }
 
     @Override
-    public ResponseMessage deleteMessage(String username, DeleteMessageRequest deleteMessageRequest) {
+    @Transactional
+    public ResponseMessage archiveChat(String username, UUID chatId) throws PrivateChatNotFoundException, StudentNotFoundException, AlreadyArchiveChatException {
+        Student student = studentRepository.getByUserNumber(username);
+        PrivateChat privateChat = privateChatRepository.findById(chatId).orElseThrow(PrivateChatNotFoundException::new);
+        if (student.getArchiveChats().contains(privateChat)) {
+            throw new AlreadyArchiveChatException();
+        }
+        student.getArchiveChats().add(privateChat);
+        return new ResponseMessage("sohbet arşivlendi", true);
+    }
+
+    @Override
+    @Transactional
+    public ResponseMessage pinChat(String username, UUID chatId) throws StudentNotFoundException, PrivateChatNotFoundException, AlreadyPinnedChatException {
+        Student student = studentRepository.getByUserNumber(username);
+        PrivateChat privateChat = privateChatRepository.findById(chatId).orElseThrow(PrivateChatNotFoundException::new);
+        if (student.getPinnedChats().contains(privateChat)) {
+            throw new AlreadyPinnedChatException();
+        }
+        student.getPinnedChats().add(privateChat);
+        return new ResponseMessage("sohbet sabitlendi", true);
+    }
+
+    @Override
+    public ResponseMessage unpinChat(String username, UUID chatId) {
         return null;
     }
 
     @Override
-    public ResponseMessage deleteChat(String username, UUID chatId) {
+    public ResponseMessage unarchiveChat(String username, UUID chatId) {
         return null;
     }
 
-    @Override
-    public DataResponseMessage<List<String>> getReadReceipts(String username, UUID messageId) {
-        return null;
-    }
+
 }

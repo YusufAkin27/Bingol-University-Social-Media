@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
@@ -79,4 +80,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     List<String> findEmailsByRoles(@Param("role") Role role);
 
     List<Student> findByRoles(Role role);
+
+
+
 }

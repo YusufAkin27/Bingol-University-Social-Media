@@ -126,6 +126,12 @@ public class Student extends User {
     @OneToMany
     @JoinTable(name = "student_group_chats", joinColumns = @JoinColumn(name = "student_id"), inverseJoinColumns = @JoinColumn(name = "chat_id"))
     private List<GroupChat> groupChats = new ArrayList<>();
+    @OneToMany
+    @JoinTable(name = "archive_chats", joinColumns = @JoinColumn(name = "student_id"), inverseJoinColumns = @JoinColumn(name = "chat_id"))
+    private List<Chat> archiveChats = new ArrayList<>();
+    @OneToMany
+    @JoinTable(name = "pinned_chats", joinColumns = @JoinColumn(name = "student_id"), inverseJoinColumns = @JoinColumn(name = "chat_id"))
+    private List<Chat> pinnedChats = new ArrayList<>();
     public int getPopularityScore() {
         return calculatePopularityScore();
     }
