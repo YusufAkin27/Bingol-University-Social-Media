@@ -10,13 +10,14 @@ import bingol.campus.chat.request.DeleteMessageRequest;
 import bingol.campus.chat.request.UpdateMessageStatusRequest;
 import bingol.campus.response.DataResponseMessage;
 import bingol.campus.response.ResponseMessage;
-import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.exceptions.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,12 +45,12 @@ public class PrivateChatController {
     }
 
     // Mesaj gönder
-    @PostMapping("/send")
-    public DataResponseMessage<MessageDTO> sendPrivateMessage(
+    @PostMapping("/send/files")
+    public DataResponseMessage<MessageDTO> sendPrivateMessageFiles(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestPart("message") SendMessageRequest sendMessageRequest,
             @RequestPart(value = "files", required = false) MultipartFile[] files
-    ) throws StudentNotFoundException, PrivateChatNotFoundException {
+    ) throws StudentNotFoundException, PrivateChatNotFoundException, PrivateChatParticipantNotFoundException, OnlyPhotosAndVideosException, PhotoSizeLargerException, IOException, VideoSizeLargerException, FileFormatCouldNotException {
         return privateChatService.sendPrivateFiles(userDetails.getUsername(), sendMessageRequest, files);
     }
 

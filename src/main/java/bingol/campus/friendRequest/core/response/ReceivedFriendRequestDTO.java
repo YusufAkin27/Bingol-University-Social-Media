@@ -5,12 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class ReceivedFriendRequestDTO {
-    private Long requestId;           // Arkadaşlık isteği ID'si
+    private UUID requestId;           // Arkadaşlık isteği ID'si
     private String senderPhotoUrl;    // Gönderenin profil fotoğrafının URL'si
     private String senderUsername;    // Gönderenin kullanıcı adı
     private String senderFullName;    // Gönderenin tam adı

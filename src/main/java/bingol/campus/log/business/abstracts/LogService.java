@@ -12,11 +12,12 @@ import bingol.campus.student.exceptions.StudentNotActiveException;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface LogService {
     ResponseMessage addLog(CreateLogRequest createLogRequest) throws StudentNotFoundException, StudentNotActiveException, StudentDeletedException;
 
-    ResponseMessage deleteLog(String username, Long logId) throws StudentNotFoundException, LogNotFoundException;
+    ResponseMessage deleteLog(String username, UUID logId) throws StudentNotFoundException, LogNotFoundException;
 
     DataResponseMessage<List<LogsDTO>> getLogs(String username) throws StudentNotFoundException;
     List<Log> getActiveLogs(Student student);

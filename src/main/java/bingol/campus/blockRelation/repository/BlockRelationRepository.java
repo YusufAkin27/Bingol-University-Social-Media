@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface BlockRelationRepository extends JpaRepository<BlockRelation,Long> {
+import java.util.UUID;
+
+public interface BlockRelationRepository extends JpaRepository<BlockRelation, UUID> {
     Page<BlockRelation> findByBlocker(Student student, Pageable pageable);
 }

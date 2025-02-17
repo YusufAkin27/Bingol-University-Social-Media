@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1/api/logs")
@@ -28,7 +29,7 @@ public class LogController {
     }
     @DeleteMapping("/{logId}")
     public ResponseMessage deleteLog(@AuthenticationPrincipal UserDetails userDetails,
-                                    @PathVariable Long logId) throws StudentNotFoundException, LogNotFoundException {
+                                    @PathVariable UUID logId) throws StudentNotFoundException, LogNotFoundException {
         return logService.deleteLog(userDetails.getUsername(),logId);
     }
 

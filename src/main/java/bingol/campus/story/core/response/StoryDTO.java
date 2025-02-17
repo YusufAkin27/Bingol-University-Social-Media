@@ -5,12 +5,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class StoryDTO {
-    private long storyId;
+    private UUID storyId;
     private String profilePhoto;
     private String username;
     private long userId;

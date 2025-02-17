@@ -2,6 +2,7 @@ package bingol.campus.story.business.concretes;
 
 import bingol.campus.comment.core.converter.CommentConverter;
 import bingol.campus.comment.entity.Comment;
+import bingol.campus.config.MediaUploadService;
 import bingol.campus.followRelation.core.exceptions.BlockingBetweenStudent;
 import bingol.campus.like.core.converter.LikeConverter;
 import bingol.campus.like.entity.Like;
@@ -30,7 +31,7 @@ import bingol.campus.story.repository.StoryViewerRepository;
 import bingol.campus.student.core.converter.StudentConverter;
 import bingol.campus.student.core.response.SearchAccountDTO;
 import bingol.campus.student.entity.Student;
-import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.exceptions.*;
 import bingol.campus.student.repository.StudentRepository;
 import com.cloudinary.Cloudinary;
 
@@ -45,6 +46,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,7 +54,7 @@ import java.util.stream.Collectors;
 public class StoryManager implements StoryService {
     private final StudentRepository studentRepository;
     private final StoryRepository storyRepository;
-    private final Cloudinary cloudinary;
+    private final MediaUploadService mediaUploadService;
     private final StoryConverter storyConverter;
     private final StudentConverter studentConverter;
     private final FeaturedStoryRepository featuredStoryRepository;
@@ -63,7 +65,7 @@ public class StoryManager implements StoryService {
 
     @Override
     @Transactional
-    public ResponseMessage add(String username, MultipartFile file) throws StudentNotFoundException, IOException {
+    public ResponseMessage add(String username, MultipartFile file) throws StudentNotFoundException, IOException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
         Student student = studentRepository.getByUserNumber(username);
         if (student == null) {
             throw new StudentNotFoundException();
@@ -74,42 +76,15 @@ public class StoryManager implements StoryService {
         story.setComments(new ArrayList<>());
         story.setLikes(new ArrayList<>());
         story.setCreatedAt(LocalDateTime.now());
-        story.setExpiresAt(LocalDateTime.now().plusDays(1));
+        story.setExpiresAt(LocalDateTime.now().plusMinutes(1));
         story.setStudent(student);
 
         if (file != null && !file.isEmpty()) {
-            String contentType = file.getContentType();
-
-            if (contentType == null) {
-                return new ResponseMessage("Geçersiz dosya formatı.", false);
-            }
-
-            long maxFileSize = 50 * 1024 * 1024; // 50MB (Videolar için artırıldı)
-
-            if (file.getSize() > maxFileSize) {
-                return new ResponseMessage("Dosya boyutu 50MB'yi geçemez.", false);
-            }
-
-            Map<String, Object> uploadParams = ObjectUtils.emptyMap();
-            Map uploadResult;
-
-            if (contentType.startsWith("image/")) {
-                if (!contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
-                    return new ResponseMessage("Yalnızca JPEG ve PNG formatındaki resimler kabul edilir.", false);
-                }
-                uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
-                story.setPhoto((String) uploadResult.get("secure_url"));
-            } else if (contentType.startsWith("video/")) {
-                if (!contentType.equals("video/mp4") && !contentType.equals("video/quicktime")) {
-                    return new ResponseMessage("Yalnızca MP4 ve QuickTime formatındaki videolar kabul edilir.", false);
-                }
-                uploadParams = ObjectUtils.asMap("resource_type", "video");
-                uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
-                story.setPhoto((String) uploadResult.get("secure_url"));
-            } else {
-                return new ResponseMessage("Sadece resim veya video yükleyebilirsiniz.", false);
-            }
+            CompletableFuture<String> stringCompletableFuture = mediaUploadService.uploadAndOptimizeMedia(file);
+            String url = stringCompletableFuture.join();
+            story.setPhoto(url);
         }
+
 
         student.getStories().add(story);
         storyRepository.save(story);
@@ -141,7 +116,7 @@ public class StoryManager implements StoryService {
 
     @Override
     @Transactional
-    public ResponseMessage delete(String username, Long storyId)
+    public ResponseMessage delete(String username, UUID storyId)
             throws StoryNotFoundException, StudentNotFoundException, OwnerStoryException {
         Student student = studentRepository.getByUserNumber(username);
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
@@ -156,7 +131,7 @@ public class StoryManager implements StoryService {
     }
 
     @Override
-    public DataResponseMessage<StoryDetails> getStoryDetails(String username, Long storyId, Pageable pageable) throws StudentNotFoundException, StoryNotFoundException, OwnerStoryException {
+    public DataResponseMessage<StoryDetails> getStoryDetails(String username, UUID storyId, Pageable pageable) throws StudentNotFoundException, StoryNotFoundException, OwnerStoryException {
         // Öğrenciyi buluyoruz
         Student student = studentRepository.getByUserNumber(username);
 
@@ -176,7 +151,7 @@ public class StoryManager implements StoryService {
 
     @Override
     @Transactional
-    public ResponseMessage featureUpdate(String username, Long featureId, String title, MultipartFile coverPhoto) throws StudentNotFoundException, FeaturedStoryGroupNotFoundException, FeaturedStoryGroupNotAccess, IOException {
+    public ResponseMessage featureUpdate(String username, UUID featureId, String title, MultipartFile file) throws StudentNotFoundException, FeaturedStoryGroupNotFoundException, FeaturedStoryGroupNotAccess, IOException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
         Student student = studentRepository.getByUserNumber(username);
         FeaturedStory featuredStory = featuredStoryRepository.findById(featureId).orElseThrow(FeaturedStoryGroupNotFoundException::new);
         if (!featuredStory.getStudent().equals(student)) {
@@ -185,27 +160,10 @@ public class StoryManager implements StoryService {
         if (title != null) {
             featuredStory.setTitle(title);
         }
-        if (coverPhoto != null && !coverPhoto.isEmpty()) {
-            String contentType = coverPhoto.getContentType();
+        if (file != null && !file.isEmpty()) {
+          CompletableFuture<String> stringCompletableFuture=mediaUploadService.uploadAndOptimizeMedia(file);
 
-            if (contentType == null ||
-                    (!contentType.equals("image/jpeg") &&
-                            !contentType.equals("image/png"))) {
-                return new ResponseMessage("Yalnızca JPEG ve PNG formatındaki dosyalar kabul edilir.", false);
-            }
-
-            long maxFileSize = 10 * 1024 * 1024; // 10MB
-            if (coverPhoto.getSize() > maxFileSize) {
-                return new ResponseMessage("Dosya boyutu 10MB'yi geçemez.", false);
-            }
-
-
-            Map<String, Object> uploadParams = ObjectUtils.emptyMap(); // Parametreler olmadan doğrudan yükle
-
-            Map uploadResult = cloudinary.uploader().upload(coverPhoto.getBytes(), uploadParams);
-            String photoUrl = (String) uploadResult.get("secure_url");
-
-            featuredStory.setCoverPhoto(photoUrl);
+            featuredStory.setCoverPhoto(stringCompletableFuture.join());
         }
 
         featuredStoryRepository.save(featuredStory);
@@ -213,7 +171,7 @@ public class StoryManager implements StoryService {
     }
 
     @Override
-    public DataResponseMessage<FeatureStoryDTO> getFeatureId(String username, Long featureId) throws StudentNotFoundException, FeaturedStoryGroupNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
+    public DataResponseMessage<FeatureStoryDTO> getFeatureId(String username, UUID featureId) throws StudentNotFoundException, FeaturedStoryGroupNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username);
         FeaturedStory featuredStory = featuredStoryRepository.findById(featureId).orElseThrow(FeaturedStoryGroupNotFoundException::new);
         Student student1 = featuredStory.getStudent();
@@ -241,9 +199,9 @@ public class StoryManager implements StoryService {
 
     @Override
     public DataResponseMessage<List<StoryDTO>> archivedStories(String username) throws StudentNotFoundException {
-        Student student=studentRepository.getByUserNumber(username);
-        List<StoryDTO>storyDTOS=student.getArchivedStories().stream().map(storyConverter::toDto).toList();
-        return new DataResponseMessage<>("arşiv",true,storyDTOS);
+        Student student = studentRepository.getByUserNumber(username);
+        List<StoryDTO> storyDTOS = student.getArchivedStories().stream().map(storyConverter::toDto).toList();
+        return new DataResponseMessage<>("arşiv", true, storyDTOS);
     }
 
     private void accessStory(Student student, Student student1) throws BlockingBetweenStudent, StudentProfilePrivateException {
@@ -272,7 +230,7 @@ public class StoryManager implements StoryService {
 
     @Override
     @Transactional
-    public ResponseMessage featureStory(String username, Long storyId, Long featuredStoryId)
+    public ResponseMessage featureStory(String username, UUID storyId, UUID featuredStoryId)
             throws StudentNotFoundException, StoryNotFoundException, OwnerStoryException, AlreadyFeaturedStoriesException, FeaturedStoryGroupNotFoundException {
         Student student = studentRepository.getByUserNumber(username);
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
@@ -316,25 +274,21 @@ public class StoryManager implements StoryService {
 
     @Override
     public DataResponseMessage<List<StoryDetails>> getStories(String username, Pageable pageable) throws StudentNotFoundException {
-        // Öğrenciyi kullanıcı adı ile buluyoruz
         Student student = studentRepository.getByUserNumber(username);
 
-        // Öğrencinin aktif hikayelerini sayfalayarak alıyoruz
         Page<Story> storiesPage = storyRepository.findByStudentAndIsActive(student, true, pageable);
 
-        // Sayfa içeriğini StoryDetails DTO'ya dönüştürüyoruz
         List<StoryDetails> storyDetails = storiesPage.getContent().stream()
-                .map(story -> storyConverter.toDetails(story, pageable))  // Sayfalama parametresini ileterek dönüştürme
+                .map(story -> storyConverter.toDetails(story, pageable))
                 .collect(Collectors.toList());
 
-        // Sonuçları döndürüyoruz
         return new DataResponseMessage<>("Aktif hikayeler başarıyla getirildi.", true, storyDetails);
     }
 
 
     @Override
     @Transactional
-    public ResponseMessage extendStoryDuration(String username, Long storyId, int hours)
+    public ResponseMessage extendStoryDuration(String username, UUID storyId, int hours)
             throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException, InvalidHourRangeException, FeaturedStoryModificationException {
 
         // Kullanıcıyı getir
@@ -351,7 +305,7 @@ public class StoryManager implements StoryService {
                 .orElseThrow(OwnerStoryException::new);
 
         // Eğer hikaye aktif değilse süre uzatma yapılamaz
-        if (!story.isActive()) {
+        if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
 
@@ -372,7 +326,7 @@ public class StoryManager implements StoryService {
 
 
     @Override
-    public List<SearchAccountDTO> getStoryViewers(String username, Long storyId)
+    public List<SearchAccountDTO> getStoryViewers(String username, UUID storyId)
             throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
 
         // Kullanıcıyı getir
@@ -385,7 +339,7 @@ public class StoryManager implements StoryService {
                 .orElseThrow(OwnerStoryException::new);
 
         // Eğer hikaye aktif değilse hata fırlat
-        if (!story.isActive()) {
+        if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
 
@@ -396,7 +350,7 @@ public class StoryManager implements StoryService {
 
 
     @Override
-    public int getStoryViewCount(String username, Long storyId) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
+    public int getStoryViewCount(String username, UUID storyId) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
         Student student = studentRepository.getByUserNumber(username);
 
         // Kullanıcının hikayelerinden ilgili hikayeyi bul
@@ -406,7 +360,7 @@ public class StoryManager implements StoryService {
                 .orElseThrow(OwnerStoryException::new);
 
         // Eğer hikaye aktif değilse hata fırlat
-        if (!story.isActive()) {
+        if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
         return story.getViewers().size();
@@ -416,7 +370,7 @@ public class StoryManager implements StoryService {
     public DataResponseMessage<List<StoryDTO>> getPopularStories(String username) throws StudentNotFoundException {
         // Tüm aktif ve özel olmayan (isPrivate=false) hikayeleri getir
         List<Story> activeStories = storyRepository.findAll().stream()
-                .filter(story -> story.isActive() && !story.getStudent().isPrivate())
+                .filter(story -> story.getIsActive() && !story.getStudent().isPrivate())
                 .toList();
 
         // Hikayelere puan hesaplamayı zaten başka bir yerde yapıyorsunuz, bu yüzden sıralama yapalım
@@ -435,12 +389,12 @@ public class StoryManager implements StoryService {
 
 
     @Override
-    public DataResponseMessage<List<StoryDTO>> getUserActiveStories(String username, String username1)
+    public DataResponseMessage<List<StoryDTO>> getUserActiveStories(String username, Long userId)
             throws StudentNotFoundException, BlockingBetweenStudent, NotFollowingException {
         // Öğrenci (student) bilgisi alınıyor
         Student student = studentRepository.getByUserNumber(username);
         // Takip edilecek öğrenci (student1) bilgisi alınıyor
-        Student student1 = studentRepository.getByUserNumber(username1);
+        Student student1 = studentRepository.findById(userId).orElseThrow(StudentNotFoundException::new);
 
         // Engellemeleri kontrol edelim: Eğer student1, student'i engellemişse veya student, student1'i engellemişse
         boolean isBlockedByStudent1 = student1.getBlocked().stream()
@@ -459,7 +413,7 @@ public class StoryManager implements StoryService {
         // Eğer student1'in profili gizli değilse veya student, student1'i takip ediyorsa hikayeleri görebilir
         if (!student1.isPrivate() || isFollowing) {
             // student1'in aktif hikayelerini al
-            List<Story> stories = student1.getStories().stream().filter(Story::isActive).toList();
+            List<Story> stories = student1.getStories().stream().filter(Story::getIsActive).toList();
 
             // StoryDTO'ya dönüştür
             List<StoryDTO> storyDTOS = stories.stream().map(storyConverter::toDto).collect(Collectors.toList());
@@ -473,7 +427,7 @@ public class StoryManager implements StoryService {
 
 
     @Override
-    public DataResponseMessage<List<CommentDetailsDTO>> getStoryComments(String username, Long storyId) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
+    public DataResponseMessage<List<CommentDetailsDTO>> getStoryComments(String username, UUID storyId) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
         Student student = studentRepository.getByUserNumber(username);
 
         // Kullanıcının hikayelerinden ilgili hikayeyi bul
@@ -483,7 +437,7 @@ public class StoryManager implements StoryService {
                 .orElseThrow(OwnerStoryException::new);
 
         // Eğer hikaye aktif değilse hata fırlat
-        if (!story.isActive()) {
+        if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
         List<Comment> comments = story.getComments();
@@ -494,7 +448,7 @@ public class StoryManager implements StoryService {
 
     @Override
     @Transactional
-    public DataResponseMessage<StoryDTO> viewStory(String username, Long storyId)
+    public DataResponseMessage<StoryDTO> viewStory(String username, UUID storyId)
             throws StoryNotFoundException, StoryNotActiveException, StudentNotFoundException, NotFollowingException, BlockingBetweenStudent {
         // Öğrenci bilgisi alınıyor
         Student student = studentRepository.getByUserNumber(username);
@@ -503,7 +457,7 @@ public class StoryManager implements StoryService {
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
 
         // Hikayenin aktif olup olmadığını kontrol et
-        if (!story.isActive()) {
+        if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
 
@@ -547,7 +501,7 @@ public class StoryManager implements StoryService {
 
 
     @Override
-    public DataResponseMessage<List<LikeDetailsDTO>> getLike(String username, Long storyId) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
+    public DataResponseMessage<List<LikeDetailsDTO>> getLike(String username, UUID storyId) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
         Student student = studentRepository.getByUserNumber(username);
 
         // Kullanıcının hikayelerinden ilgili hikayeyi bul
@@ -557,7 +511,7 @@ public class StoryManager implements StoryService {
                 .orElseThrow(OwnerStoryException::new);
 
         // Eğer hikaye aktif değilse hata fırlat
-        if (!story.isActive()) {
+        if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
         List<Like> likes = story.getLikes();

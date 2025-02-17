@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -20,8 +21,9 @@ import java.util.List;
 public class FeaturedStory {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Öne çıkarılan hikaye grubu ID'si
+    @GeneratedValue(generator = "UUID")
+    @Column(updatable = false, nullable = false)
+    private UUID id; // Öne çıkarılan hikaye grubu ID'si
 
     private String coverPhoto;
 

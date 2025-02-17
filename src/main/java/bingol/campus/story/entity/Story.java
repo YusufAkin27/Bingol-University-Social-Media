@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,22 +23,23 @@ import java.util.List;
 public class Story {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Hikaye ID'si
+    @GeneratedValue(generator = "UUID")
+    @Column(updatable = false, nullable = false)
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "author_id", nullable = false)
-    private Student student; // Hikayeyi paylaşan öğrenci
+    private Student student;
 
-    private String photo; // Hikayenin içeriği (metin, görsel URL'si vb.)
+    private String photo;
 
-    private LocalDateTime createdAt = LocalDateTime.now(); // Hikayenin oluşturulma tarihi
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    private LocalDateTime expiresAt; // Hikayenin sonlanma tarihi (24 saat sonra vs.)
+    private LocalDateTime expiresAt;
 
-    private boolean isFeatured=false;
+    private boolean isFeatured =false;
 
-    private boolean isActive = true; // Hikayenin geçerli olup olmadığını belirten alan
+    private boolean isActive=true;
 
     private long score;
 
@@ -54,26 +56,11 @@ public class Story {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "story")
     private List<StoryViewer> viewers = new ArrayList<>(); // Hikayeyi görüntüleyen kullanıcılar
 
-    // Hikayenin aktif olup olmadığını kontrol eden ve güncelleyen metod
-// Hikayenin aktif olup olmadığını kontrol eden ve güncelleyen metod
-    @PrePersist
-    @PreUpdate
-    public void updateIsActive() {
-        if (expiresAt != null) {
-            this.isActive = LocalDateTime.now().isBefore(expiresAt);
+    public boolean getIsActive() {
+        if (this.expiresAt.isAfter(LocalDateTime.now())) {
+            this.isActive = false;
+            return false;
         }
-
-        // Hikayenin skorunu hesapla (1 görüntüleme = 1 puan, 1 beğeni = 5 puan, 1 yorum = 10 puan)
-        this.score = calculateScore();
+        return true;
     }
-
-    // Skoru hesaplayan yardımcı metod
-    private long calculateScore() {
-        long viewersScore = this.viewers.size() * 1; // Her görüntüleme için 1 puan
-        long likesScore = this.likes.size() * 5; // Her beğeni için 5 puan
-        long commentsScore = this.comments.size() * 10; // Her yorum için 10 puan
-
-        return viewersScore + likesScore + commentsScore; // Toplam puan
-    }
-
 }

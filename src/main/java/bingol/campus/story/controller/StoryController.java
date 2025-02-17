@@ -11,7 +11,7 @@ import bingol.campus.story.core.response.FeatureStoryDTO;
 import bingol.campus.story.core.response.StoryDTO;
 import bingol.campus.story.core.response.StoryDetails;
 import bingol.campus.student.core.response.SearchAccountDTO;
-import bingol.campus.student.exceptions.StudentNotFoundException;
+import bingol.campus.student.exceptions.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1/api/story")
@@ -34,7 +35,7 @@ public class StoryController {
     // Yeni hikaye ekleme
     @PostMapping("/add")
     public ResponseMessage add(@AuthenticationPrincipal UserDetails userDetails,
-                               @RequestParam("file") MultipartFile file) throws StudentNotFoundException, IOException {
+                               @RequestParam("file") MultipartFile file) throws StudentNotFoundException, IOException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
         return storyService.add(userDetails.getUsername(), file);
     }
 
@@ -42,15 +43,15 @@ public class StoryController {
     // Mevcut bir hikayeyi silme
     @DeleteMapping("/{storyId}")
     public ResponseMessage delete(@AuthenticationPrincipal UserDetails userDetails,
-                                  @PathVariable Long storyId) throws StoryNotFoundException, StudentNotFoundException, OwnerStoryException {
+                                  @PathVariable UUID storyId) throws StoryNotFoundException, StudentNotFoundException, OwnerStoryException {
         return storyService.delete(userDetails.getUsername(), storyId);
     }
 
 
     @PutMapping("/{storyId}/feature")
     public ResponseMessage featureStory(@AuthenticationPrincipal UserDetails userDetails,
-                                        @PathVariable Long storyId,
-                                        @RequestParam(required = false) Long featuredStoryId)
+                                        @PathVariable UUID storyId,
+                                        @RequestParam(required = false) UUID featuredStoryId)
             throws StoryNotFoundException, StudentNotFoundException, AlreadyFeaturedStoriesException, OwnerStoryException, FeaturedStoryGroupNotFoundException {
 
         String username = userDetails.getUsername();
@@ -59,14 +60,14 @@ public class StoryController {
 
     @PutMapping("/{featureId}/update")
     public ResponseMessage featureUpdate(@AuthenticationPrincipal UserDetails userDetails,
-                                         @PathVariable Long featureId,
+                                         @PathVariable UUID featureId,
                                          @RequestParam(required = false) String title,
-                                         @RequestParam(required = false) MultipartFile coverPhoto) throws FeaturedStoryGroupNotFoundException, StudentNotFoundException, FeaturedStoryGroupNotAccess, IOException {
-        return storyService.featureUpdate(userDetails.getUsername(),featureId,title,coverPhoto);
+                                         @RequestParam(required = false) MultipartFile file) throws FeaturedStoryGroupNotFoundException, StudentNotFoundException, FeaturedStoryGroupNotAccess, IOException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
+        return storyService.featureUpdate(userDetails.getUsername(),featureId,title,file);
     }
     @GetMapping("/feature/{featureId}")
     public DataResponseMessage<FeatureStoryDTO> getFeatureId(@AuthenticationPrincipal UserDetails userDetails,
-                                                             @PathVariable Long featureId) throws BlockingBetweenStudent, FeaturedStoryGroupNotFoundException, StudentNotFoundException, StudentProfilePrivateException {
+                                                             @PathVariable UUID featureId) throws BlockingBetweenStudent, FeaturedStoryGroupNotFoundException, StudentNotFoundException, StudentProfilePrivateException {
         return storyService.getFeatureId(userDetails.getUsername(),featureId);
     }
     // Belirli bir öğrencinin öne çıkarılan hikayelerini getir
@@ -95,7 +96,7 @@ public class StoryController {
     // Belirli bir hikaye detaylarını ve yorumlarını sayfalı olarak getirme
     @GetMapping("/{storyId}")
     public DataResponseMessage<StoryDetails> getStoryDetails(@AuthenticationPrincipal UserDetails userDetails,
-                                                             @PathVariable Long storyId,
+                                                             @PathVariable UUID storyId,
                                                              Pageable pageable) throws StoryNotFoundException, StudentNotFoundException, OwnerStoryException {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return storyService.getStoryDetails(userDetails.getUsername(), storyId, pageRequest);
@@ -105,7 +106,7 @@ public class StoryController {
     // Belirli bir hikayenin süresini uzatma
     @PutMapping("/{storyId}/extend")
     public ResponseMessage extendStoryDuration(@AuthenticationPrincipal UserDetails userDetails,
-                                               @PathVariable Long storyId,
+                                               @PathVariable UUID storyId,
                                                @RequestParam("hours") int hours) throws StoryNotActiveException, FeaturedStoryModificationException, StudentNotFoundException, OwnerStoryException, InvalidHourRangeException {
         return storyService.extendStoryDuration(userDetails.getUsername(), storyId, hours);
     }
@@ -113,14 +114,14 @@ public class StoryController {
     // Belirli bir hikayeyi görüntüleyen kullanıcıların listesi
     @GetMapping("/{storyId}/viewers")
     public List<SearchAccountDTO> getStoryViewers(@AuthenticationPrincipal UserDetails userDetails,
-                                                  @PathVariable Long storyId) throws StoryNotActiveException, StudentNotFoundException, OwnerStoryException {
+                                                  @PathVariable UUID storyId) throws StoryNotActiveException, StudentNotFoundException, OwnerStoryException {
         return storyService.getStoryViewers(userDetails.getUsername(), storyId);
     }
 
     // Belirli bir hikayenin toplam görüntülenme sayısı
     @GetMapping("/{storyId}/views")
     public int getStoryViewCount(@AuthenticationPrincipal UserDetails userDetails,
-                                 @PathVariable Long storyId) throws StoryNotActiveException, StudentNotFoundException, OwnerStoryException {
+                                 @PathVariable UUID storyId) throws StoryNotActiveException, StudentNotFoundException, OwnerStoryException {
         return storyService.getStoryViewCount(userDetails.getUsername(), storyId);
     }
 
@@ -131,27 +132,27 @@ public class StoryController {
     }
 
     // Belirli bir kullanıcının aktif hikayelerini getirme
-    @GetMapping("/user/{username}/active")
-    public DataResponseMessage<List<StoryDTO>> getUserActiveStories(@AuthenticationPrincipal UserDetails userDetails, @PathVariable String username) throws NotFollowingException, BlockingBetweenStudent, StudentNotFoundException {
-        return storyService.getUserActiveStories(userDetails.getUsername(), username);
+    @GetMapping("/user/{studentId}/active")
+    public DataResponseMessage<List<StoryDTO>> getUserActiveStories(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long userId) throws NotFollowingException, BlockingBetweenStudent, StudentNotFoundException {
+        return storyService.getUserActiveStories(userDetails.getUsername(), userId);
     }
 
     // Belirli bir hikayeye yapılan yorumları listeleme
     @GetMapping("/{storyId}/comments")
     public DataResponseMessage<List<CommentDetailsDTO>> getStoryComments(@AuthenticationPrincipal UserDetails userDetails,
-                                                                         @PathVariable Long storyId) throws StoryNotActiveException, StudentNotFoundException, OwnerStoryException {
+                                                                         @PathVariable UUID storyId) throws StoryNotActiveException, StudentNotFoundException, OwnerStoryException {
         return storyService.getStoryComments(userDetails.getUsername(), storyId);
     }
 
     //görüntüle
     @PostMapping("/{storyId}/view")
-    public DataResponseMessage<StoryDTO> viewStory(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long storyId)
+    public DataResponseMessage<StoryDTO> viewStory(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID storyId)
             throws StoryNotFoundException, StudentNotFoundException, OwnerStoryException, NotFollowingException, StoryNotActiveException, BlockingBetweenStudent {
         return storyService.viewStory(userDetails.getUsername(), storyId);
     }
 
     @GetMapping("/{storyId}/getLike")
-    public ResponseMessage getLike(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long storyId) throws StoryNotActiveException, StudentNotFoundException, OwnerStoryException {
+    public ResponseMessage getLike(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID storyId) throws StoryNotActiveException, StudentNotFoundException, OwnerStoryException {
         return storyService.getLike(userDetails.getUsername(), storyId);
     }
 

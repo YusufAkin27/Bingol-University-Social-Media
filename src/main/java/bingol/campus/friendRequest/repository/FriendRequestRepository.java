@@ -6,7 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface FriendRequestRepository extends JpaRepository<FriendRequest,Long> {
+import java.util.UUID;
+
+public interface FriendRequestRepository extends JpaRepository<FriendRequest, UUID> {
     void deleteBySenderAndReceiver(Student student, Student student1);
 
     Page<FriendRequest> findByReceiver(Student student, Pageable pageable);

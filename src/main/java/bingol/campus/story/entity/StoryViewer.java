@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -18,8 +19,9 @@ import java.time.LocalDateTime;
 public class StoryViewer {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // StoryViewer ID'si
+    @GeneratedValue(generator = "UUID")
+    @Column(updatable = false, nullable = false)
+    private UUID id; // StoryViewer ID'si
 
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)

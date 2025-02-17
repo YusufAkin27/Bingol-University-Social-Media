@@ -9,8 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
-public interface StoryRepository extends JpaRepository<Story,Long> {
+public interface StoryRepository extends JpaRepository<Story, UUID> {
     Page<Story> findByStudentInAndIsActiveTrueOrderByCreatedAtDesc(List<Student> followingList, Pageable pageable);
 
     List<Story> findByStudent(Student student1);

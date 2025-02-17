@@ -645,7 +645,7 @@ public class StudentManager implements StudentService {
 
         student.setPrivate(isPrivate);
         if (!isPrivate) {
-            List<Long> friendRequests = student.getReceiverRequest().stream().map(FriendRequest::getId).toList();
+            List<UUID> friendRequests = student.getReceiverRequest().stream().map(FriendRequest::getId).toList();
             friendRequestService.acceptFriendRequestsBulk(username, friendRequests);
         }
 
@@ -910,7 +910,7 @@ public class StudentManager implements StudentService {
         Pageable pageable = PageRequest.of(page, 10);
         Page<Story> storyPage = storyRepository.findByStudentInAndIsActiveTrueOrderByCreatedAtDesc(followingList, pageable);
 
-        List<Long> viewedStoryIds = storyViewerRepository.findViewedStoryIdsByStudent(student)
+        List<UUID> viewedStoryIds = storyViewerRepository.findViewedStoryIdsByStudent(student)
                 .stream()
                 .map(StoryViewer::getId)
                 .toList();

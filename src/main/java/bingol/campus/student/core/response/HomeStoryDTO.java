@@ -6,13 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class HomeStoryDTO {
-    private List<Long> storyId;
+    private List<UUID> storyId;
     private long studentId;
     private String username;
     private List<String>photos;

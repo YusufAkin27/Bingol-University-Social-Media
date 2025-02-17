@@ -146,7 +146,7 @@ public class PostManager implements PostService {
 
     @Override
     @Transactional
-    public ResponseMessage update(String username, Long postId, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws StudentNotFoundException, PostNotFoundException, PostNotFoundForUserException, IOException, UnauthorizedTaggingException, BlockedUserTaggedException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
+    public ResponseMessage update(String username, UUID postId, String description, String location, List<String> tagAPerson, MultipartFile[] photos) throws StudentNotFoundException, PostNotFoundException, PostNotFoundForUserException, IOException, UnauthorizedTaggingException, BlockedUserTaggedException, OnlyPhotosAndVideosException, PhotoSizeLargerException, VideoSizeLargerException, FileFormatCouldNotException {
         // Kullanıcıyı al
         Student student = studentRepository.getByUserNumber(username);
         Post post = postRepository.findById(postId)
@@ -240,7 +240,7 @@ public class PostManager implements PostService {
 
     @Override
     @Transactional
-    public ResponseMessage delete(String username, Long postId)
+    public ResponseMessage delete(String username, UUID postId)
             throws PostNotFoundForUserException, UserNotFoundException,
             PostAlreadyDeleteException, PostAlreadyNotActiveException,
             StudentNotFoundException {
@@ -280,7 +280,7 @@ public class PostManager implements PostService {
 
 
     @Override
-    public DataResponseMessage<PostDTO> getDetails(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
+    public DataResponseMessage<PostDTO> getDetails(String username, UUID postId) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
         // Kullanıcıyı ve gönderiyi al
         Student student = studentRepository.getByUserNumber(username); // İstek yapan kullanıcı
         Post post = postRepository.findById(postId)
@@ -367,7 +367,7 @@ public class PostManager implements PostService {
     }
 
     @Override
-    public ResponseMessage getLikeCount(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
+    public ResponseMessage getLikeCount(String username, UUID postId) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
         Student student = studentRepository.getByUserNumber(username);
         Post post = postRepository.findById(postId)
                 .orElseThrow(PostNotFoundException::new); // Gönderiyi doğrula
@@ -381,7 +381,7 @@ public class PostManager implements PostService {
     }
 
     @Override
-    public ResponseMessage getCommentCount(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
+    public ResponseMessage getCommentCount(String username, UUID postId) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
         Student student = studentRepository.getByUserNumber(username);
         Post post = postRepository.findById(postId)
                 .orElseThrow(PostNotFoundException::new); // Gönderiyi doğrula
@@ -395,7 +395,7 @@ public class PostManager implements PostService {
 
     @Override
     public DataResponseMessage<List<LikeDetailsDTO>> getLikeDetails(
-            String username, Long postId, Pageable pageable)
+            String username, UUID postId, Pageable pageable)
             throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithPrivateException, PostAccessDeniedWithBlockerException {
 
         Student student = studentRepository.getByUserNumber(username);
@@ -417,7 +417,7 @@ public class PostManager implements PostService {
     }
 
     @Override
-    public DataResponseMessage<List<CommentDetailsDTO>> getCommentDetails(String username, Long postId, Pageable pageable) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
+    public DataResponseMessage<List<CommentDetailsDTO>> getCommentDetails(String username, UUID postId, Pageable pageable) throws StudentNotFoundException, PostNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
         Student student = studentRepository.getByUserNumber(username);
         Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
         Student postOwner = post.getStudent();
@@ -437,7 +437,7 @@ public class PostManager implements PostService {
     }
 
     @Override
-    public DataResponseMessage<List<LikeDetailsDTO>> getStoryLikeDetails(String username, Long storyId, Pageable pageRequest) throws StudentNotFoundException, OwnerStoryException, StoryNotFoundException, PostAccessDeniedWithPrivateException, PostAccessDeniedWithBlockerException {
+    public DataResponseMessage<List<LikeDetailsDTO>> getStoryLikeDetails(String username, UUID storyId, Pageable pageRequest) throws StudentNotFoundException, OwnerStoryException, StoryNotFoundException, PostAccessDeniedWithPrivateException, PostAccessDeniedWithBlockerException {
         Student student = studentRepository.getByUserNumber(username);
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
         Student student1 = story.getStudent();
@@ -451,7 +451,7 @@ public class PostManager implements PostService {
     }
 
     @Override
-    public DataResponseMessage<List<CommentDetailsDTO>> getStoryCommentDetails(String username, Long storyId, Pageable pageRequest) throws StudentNotFoundException, StoryNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
+    public DataResponseMessage<List<CommentDetailsDTO>> getStoryCommentDetails(String username, UUID storyId, Pageable pageRequest) throws StudentNotFoundException, StoryNotFoundException, PostAccessDeniedWithBlockerException, PostAccessDeniedWithPrivateException {
         Student student = studentRepository.getByUserNumber(username);
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
         Student student1 = story.getStudent();
@@ -473,7 +473,7 @@ public class PostManager implements PostService {
 
     @Override
     @Transactional
-    public ResponseMessage deleteArchived(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, ArchivedNotFoundPost {
+    public ResponseMessage deleteArchived(String username, UUID postId) throws StudentNotFoundException, PostNotFoundException, ArchivedNotFoundPost {
         Student student = studentRepository.getByUserNumber(username);
         Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
         student.getArchivedPosts().stream().filter(p -> p.equals(post)).findFirst().orElseThrow(ArchivedNotFoundPost::new);

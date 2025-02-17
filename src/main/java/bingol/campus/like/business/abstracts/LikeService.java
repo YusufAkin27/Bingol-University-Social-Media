@@ -18,24 +18,25 @@ import bingol.campus.student.core.response.SearchAccountDTO;
 import bingol.campus.student.exceptions.StudentNotFoundException;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface LikeService {
-    ResponseMessage likeStory(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException;
+    ResponseMessage likeStory(String username, UUID storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException;
 
-    ResponseMessage likePost(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException;
+    ResponseMessage likePost(String username, UUID postId) throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException;
 
-    ResponseMessage unlikeStory(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotFoundLikeException;
+    ResponseMessage unlikeStory(String username, UUID storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotFoundLikeException;
 
-    ResponseMessage unlikePost(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostNotFoundLikeException;
+    ResponseMessage unlikePost(String username, UUID postId) throws StudentNotFoundException, PostNotFoundException, PostNotFoundLikeException;
 
     DataResponseMessage<List<StoryDTO>> getUserLikedStories(String username) throws StudentNotFoundException;
 
     DataResponseMessage<List<PostDTO>> getUserLikedPosts(String username) throws StudentNotFoundException;
 
-    DataResponseMessage<List<PostDTO>> getPostLikesAfter(Long postId, String dateTime) throws PostNotFoundException;
+    DataResponseMessage<List<PostDTO>> getPostLikesAfter(UUID postId, String dateTime) throws PostNotFoundException;
 
 
-    DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(String username, Long postId, String username1) throws PostNotFoundException, StudentNotFoundException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException;
+    DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(String username, UUID postId, String username1) throws PostNotFoundException, StudentNotFoundException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException;
 
-    DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(String username, Long storyId, String username1) throws StudentNotFoundException, StoryNotFoundException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException;
+    DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(String username, UUID storyId, String username1) throws StudentNotFoundException, StoryNotFoundException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException;
 }

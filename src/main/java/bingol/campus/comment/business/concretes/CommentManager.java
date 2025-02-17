@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,7 +48,7 @@ public class CommentManager implements CommentService {
 
     @Override
     @Transactional
-    public ResponseMessage addCommentToStory(String username, Long storyId, String content) throws StudentNotFoundException, StoryNotFoundException, BlockingBetweenStudent, NotFollowingException, StoryNotActiveException, StudentProfilePrivateException {
+    public ResponseMessage addCommentToStory(String username, UUID storyId, String content) throws StudentNotFoundException, StoryNotFoundException, BlockingBetweenStudent, NotFollowingException, StoryNotActiveException, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username); // Öğrenci bilgisi alınıyor
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new); // Hikaye bilgisi alınıyor
 
@@ -90,7 +91,7 @@ public class CommentManager implements CommentService {
 
     public void checkAccessToStory(Student student, Story story) throws BlockingBetweenStudent, StoryNotActiveException, StudentProfilePrivateException {
         // Hikayenin aktif olup olmadığını kontrol et
-        if (!story.isActive()) {
+        if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
 
@@ -137,7 +138,7 @@ public class CommentManager implements CommentService {
 
     @Override
     @Transactional
-    public ResponseMessage addCommentToPost(String username, Long postId, String content) throws PostNotFoundException, StudentNotFoundException, PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
+    public ResponseMessage addCommentToPost(String username, UUID postId, String content) throws PostNotFoundException, StudentNotFoundException, PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username); // Öğrenci bilgisi alınıyor
         Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new); // Hikaye bilgisi alınıyor
 
@@ -178,7 +179,7 @@ public class CommentManager implements CommentService {
 
     @Override
     @Transactional
-    public ResponseMessage deleteComment(String username, Long commentId) throws CommentNotFoundException, StudentNotFoundException, UnauthorizedCommentException {
+    public ResponseMessage deleteComment(String username, UUID commentId) throws CommentNotFoundException, StudentNotFoundException, UnauthorizedCommentException {
         Student student = studentRepository.getByUserNumber(username); // Kullanıcı bilgisi alınıyor
         Comment comment = commentRepository.findById(commentId).orElseThrow(CommentNotFoundException::new); // Yorum bilgisi alınıyor
 
@@ -244,7 +245,7 @@ public class CommentManager implements CommentService {
 
 
     @Override
-    public DataResponseMessage<List<CommentDTO>> getStoryComments(String username, Long storyId, Pageable pageable)
+    public DataResponseMessage<List<CommentDTO>> getStoryComments(String username, UUID storyId, Pageable pageable)
             throws NotFollowingException, BlockingBetweenStudent, StoryNotActiveException, StudentNotFoundException, StoryNotFoundException, StudentProfilePrivateException {
 
         // Kullanıcı bilgisi alınıyor
@@ -278,7 +279,7 @@ public class CommentManager implements CommentService {
 
 
     @Override
-    public DataResponseMessage<List<CommentDTO>> getPostComments(String username, Long postId, Pageable pageable)
+    public DataResponseMessage<List<CommentDTO>> getPostComments(String username, UUID postId, Pageable pageable)
             throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
 
         // Kullanıcı bilgisi alınıyor
@@ -311,7 +312,7 @@ public class CommentManager implements CommentService {
     }
 
     @Override
-    public DataResponseMessage<CommentDTO> getCommentDetails(String username, Long commentId) throws CommentNotFoundException, StudentNotFoundException, UnauthorizedCommentException {
+    public DataResponseMessage<CommentDTO> getCommentDetails(String username, UUID commentId) throws CommentNotFoundException, StudentNotFoundException, UnauthorizedCommentException {
         Student student = studentRepository.getByUserNumber(username); // Kullanıcı bilgisi alınıyor
         Comment comment = commentRepository.findById(commentId).orElseThrow(CommentNotFoundException::new); // Yorum bilgisi alınıyor
 
@@ -331,7 +332,7 @@ public class CommentManager implements CommentService {
 
 
     @Override
-    public DataResponseMessage<List<CommentDTO>> searchUserInStoryComments(String username, Long storyId, String username1) throws UnauthorizedCommentException, StudentNotFoundException, StoryNotFoundException {
+    public DataResponseMessage<List<CommentDTO>> searchUserInStoryComments(String username, UUID storyId, String username1) throws UnauthorizedCommentException, StudentNotFoundException, StoryNotFoundException {
         Student student = studentRepository.getByUserNumber(username); // Kullanıcı bilgisi alınıyor
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new); // Hikaye bilgisi alınıyor
 
@@ -358,7 +359,7 @@ public class CommentManager implements CommentService {
     }
 
     @Override
-    public DataResponseMessage<List<CommentDTO>> searchUserInPostComments(String username, Long postId, String username1) throws StudentNotFoundException, PostNotFoundException, UnauthorizedCommentException {
+    public DataResponseMessage<List<CommentDTO>> searchUserInPostComments(String username, UUID postId, String username1) throws StudentNotFoundException, PostNotFoundException, UnauthorizedCommentException {
         Student student = studentRepository.getByUserNumber(username); // Kullanıcı bilgisi alınıyor
         Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new); // Gönderi bilgisi alınıyor
 

@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1/api/post")
@@ -47,13 +48,13 @@ public class PostController {
 
 
     @DeleteMapping("/{postId}")
-    public ResponseMessage add(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws UserNotFoundException, PostNotFoundForUserException, PostNotFoundException, PostAlreadyNotActiveException, StudentNotFoundException, PostAlreadyDeleteException {
+    public ResponseMessage add(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID postId) throws UserNotFoundException, PostNotFoundForUserException, PostNotFoundException, PostAlreadyNotActiveException, StudentNotFoundException, PostAlreadyDeleteException {
         return postService.delete(userDetails.getUsername(), postId);
     }
 
     @PutMapping("/{postId}")
     public ResponseMessage updatePost(@AuthenticationPrincipal UserDetails userDetails,
-                                      @PathVariable Long postId,
+                                      @PathVariable UUID postId,
                                       @RequestParam(value = "description", required = false) String description,
                                       @RequestParam(value = "location", required = false) String location,
                                       @RequestParam(value = "tagAPerson", required = false) List<String> tagAPerson,
@@ -63,7 +64,7 @@ public class PostController {
 
     @GetMapping("/details/{postId}")
     public DataResponseMessage<PostDTO> getPostDetails(@AuthenticationPrincipal UserDetails userDetails,
-                                                       @PathVariable Long postId) throws StudentNotFoundException, PostAccessDeniedWithPrivateException, PostNotFoundException, PostAccessDeniedWithBlockerException {
+                                                       @PathVariable UUID postId) throws StudentNotFoundException, PostAccessDeniedWithPrivateException, PostNotFoundException, PostAccessDeniedWithBlockerException {
         return postService.getDetails(userDetails.getUsername(), postId);
     }
 
@@ -85,19 +86,19 @@ public class PostController {
 
 
     @GetMapping("/like-count/{postId}")
-    public ResponseMessage getLikeCount(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException {
+    public ResponseMessage getLikeCount(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID postId) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException {
         return postService.getLikeCount(userDetails.getUsername(), postId);
     }
 
     @GetMapping("/comment-count/{postId}")
-    public ResponseMessage getCommentCount(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException {
+    public ResponseMessage getCommentCount(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID postId) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException {
         return postService.getCommentCount(userDetails.getUsername(), postId);
     }
 
     @GetMapping("/like-details/{postId}")
     public DataResponseMessage<List<LikeDetailsDTO>> getLikeDetails(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             Pageable pageable) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return postService.getLikeDetails(userDetails.getUsername(), postId, pageRequest);
@@ -106,7 +107,7 @@ public class PostController {
     @GetMapping("/comment-details/{postId}")
     public DataResponseMessage<List<CommentDetailsDTO>> getCommentDetails(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             Pageable pageable) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return postService.getCommentDetails(userDetails.getUsername(), postId, pageRequest);
@@ -115,7 +116,7 @@ public class PostController {
     @GetMapping("/like-details/{storyId}")
     public DataResponseMessage<List<LikeDetailsDTO>> getStoryLikeDetails(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long storyId,
+            @PathVariable UUID storyId,
             Pageable pageable) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException, StoryNotFoundException, OwnerStoryException {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return postService.getStoryLikeDetails(userDetails.getUsername(), storyId, pageRequest);
@@ -124,7 +125,7 @@ public class PostController {
     @GetMapping("/comment-details/{storyId}")
     public DataResponseMessage<List<CommentDetailsDTO>> getStoryCommentDetails(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long storyId,
+            @PathVariable UUID storyId,
             Pageable pageable) throws PostAccessDeniedWithPrivateException, PostNotFoundException, StudentNotFoundException, PostAccessDeniedWithBlockerException, StoryNotFoundException {
         Pageable pageRequest = PageRequest.of(pageable.getPageNumber(), 10);
         return postService.getStoryCommentDetails(userDetails.getUsername(), storyId, pageRequest);
@@ -138,7 +139,7 @@ public class PostController {
     // arşivden kaldırma
     @DeleteMapping("/{postId}/archivedPost")
     public ResponseMessage deleteArchived(@AuthenticationPrincipal UserDetails userDetails
-            , @PathVariable Long postId) throws PostNotFoundException, ArchivedNotFoundPost, StudentNotFoundException {
+            , @PathVariable UUID postId) throws PostNotFoundException, ArchivedNotFoundPost, StudentNotFoundException {
         return postService.deleteArchived(userDetails.getUsername(), postId);
     }
 

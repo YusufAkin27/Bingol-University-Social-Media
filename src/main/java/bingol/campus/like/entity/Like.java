@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -21,8 +22,9 @@ import java.time.LocalDateTime;
 public class Like {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;  // Beğeni ID'si
+    @GeneratedValue(generator = "UUID")
+    @Column(updatable = false, nullable = false)
+    private UUID id;  // Beğeni ID'si
     private LocalDateTime createdAt=LocalDateTime.now();
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)

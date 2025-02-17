@@ -13,13 +13,14 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class StoryDetails {
-    private long id;
+    private UUID id;
     private String username; // Hikayeyi paylaşan kullanıcının adı
     private String photoUrl; // Hikayenin fotoğraf URL'si
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
@@ -32,21 +33,4 @@ public class StoryDetails {
     private List<SearchAccountDTO> viewing;
     private List<LikeDetailsDTO>likes;
 
-    public boolean isStoryActive() {
-        LocalDateTime now = LocalDateTime.now();
-        return now.isBefore(expiresAt);
-    }
-
-    @Override
-    public String toString() {
-        return "StoryDetails{" +
-                "username='" + username + '\'' +
-                ", photoUrl='" + photoUrl + '\'' +
-                ", createdAt='" + createdAt + '\'' +
-                ", expiresAt='" + expiresAt + '\'' +
-                ", isActive=" + isActive +
-                ", likeCount=" + likeCount +
-                ", comments=" + comments +
-                '}';
-    }
 }

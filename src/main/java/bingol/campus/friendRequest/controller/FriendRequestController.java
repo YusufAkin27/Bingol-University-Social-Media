@@ -18,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @RestController
@@ -48,35 +49,35 @@ public class FriendRequestController {
 
     // Arkadaşlık isteğini kabul et
     @PutMapping("/accept/{requestId}")
-    public ResponseMessage acceptFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long requestId) throws AlreadyAcceptedRequestException, FriendRequestNotFoundException, StudentNotFoundException, UnauthorizedRequestException, StudentDeletedException, StudentNotActiveException {
+    public ResponseMessage acceptFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable UUID requestId) throws AlreadyAcceptedRequestException, FriendRequestNotFoundException, StudentNotFoundException, UnauthorizedRequestException, StudentDeletedException, StudentNotActiveException {
       return   friendRequestService.acceptFriendRequest(userDetails.getUsername(),requestId);
     }
 
     // Arkadaşlık isteğini reddet
     @PutMapping("/reject/{requestId}")
-    public ResponseMessage rejectFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long requestId) throws FriendRequestNotFoundException, AlreadyRejectedRequestException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
+    public ResponseMessage rejectFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable UUID requestId) throws FriendRequestNotFoundException, AlreadyRejectedRequestException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
      return    friendRequestService.rejectFriendRequest(userDetails.getUsername(),requestId);
 
     }
 
     // Arkadaşlık isteğini iptal et (gönderen tarafından)
     @DeleteMapping("/cancel/{requestId}")
-    public ResponseMessage cancelFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long requestId) throws UnauthorizedRequestException, FriendRequestNotFoundException, StudentNotFoundException {
+    public ResponseMessage cancelFriendRequest(@AuthenticationPrincipal UserDetails userDetails,@PathVariable UUID requestId) throws UnauthorizedRequestException, FriendRequestNotFoundException, StudentNotFoundException {
         return    friendRequestService.cancelFriendRequest(userDetails.getUsername(),requestId);
     }
 
     // Belirli bir arkadaşlık isteğini getir
     @GetMapping("/{requestId}")
-    public DataResponseMessage getFriendRequestById(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long requestId) throws UnauthorizedRequestException, FriendRequestNotFoundException, StudentNotFoundException {
+    public DataResponseMessage getFriendRequestById(@AuthenticationPrincipal UserDetails userDetails,@PathVariable UUID requestId) throws UnauthorizedRequestException, FriendRequestNotFoundException, StudentNotFoundException {
         return  friendRequestService.getFriendRequestById(userDetails.getUsername(),requestId);
     }
     @PutMapping("/reject-bulk")
-    public ResponseMessage rejectFriendRequestsBulk(@AuthenticationPrincipal UserDetails userDetails, @RequestBody List<Long> requestIds) throws StudentNotFoundException, FriendRequestNotFoundException, AlreadyRejectedRequestException {
+    public ResponseMessage rejectFriendRequestsBulk(@AuthenticationPrincipal UserDetails userDetails, @RequestBody List<UUID> requestIds) throws StudentNotFoundException, FriendRequestNotFoundException, AlreadyRejectedRequestException {
         return friendRequestService.rejectFriendRequestsBulk(userDetails.getUsername(), requestIds);
     }
 
     @PutMapping("/accept-bulk")
-    public ResponseMessage acceptFriendRequestsBulk(@AuthenticationPrincipal UserDetails userDetails, @RequestBody List<Long> requestIds) throws StudentNotFoundException, FriendRequestNotFoundException, AlreadyAcceptedRequestException, UnauthorizedRequestException {
+    public ResponseMessage acceptFriendRequestsBulk(@AuthenticationPrincipal UserDetails userDetails, @RequestBody List<UUID> requestIds) throws StudentNotFoundException, FriendRequestNotFoundException, AlreadyAcceptedRequestException, UnauthorizedRequestException {
         return friendRequestService.acceptFriendRequestsBulk(userDetails.getUsername(), requestIds);
     }
 

@@ -34,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -179,7 +180,7 @@ public class FriendRequestManager implements FriendRequestService {
 
     @Override
     @Transactional
-    public ResponseMessage acceptFriendRequest(String username, Long requestId)
+    public ResponseMessage acceptFriendRequest(String username, UUID requestId)
             throws AlreadyAcceptedRequestException, FriendRequestNotFoundException,
             StudentNotFoundException, UnauthorizedRequestException, StudentDeletedException, StudentNotActiveException {
 
@@ -242,7 +243,7 @@ public class FriendRequestManager implements FriendRequestService {
 
     @Override
     @Transactional
-    public ResponseMessage rejectFriendRequest(String username, Long requestId) throws AlreadyRejectedRequestException, FriendRequestNotFoundException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
+    public ResponseMessage rejectFriendRequest(String username, UUID requestId) throws AlreadyRejectedRequestException, FriendRequestNotFoundException, StudentNotFoundException, StudentDeletedException, StudentNotActiveException {
         Student student = studentRepository.getByUserNumber(username);
 
 
@@ -277,7 +278,7 @@ public class FriendRequestManager implements FriendRequestService {
 
 
     @Override
-    public DataResponseMessage getFriendRequestById(String username, Long requestId) throws UnauthorizedRequestException, FriendRequestNotFoundException, StudentNotFoundException {
+    public DataResponseMessage getFriendRequestById(String username, UUID requestId) throws UnauthorizedRequestException, FriendRequestNotFoundException, StudentNotFoundException {
         Student alıcı = studentRepository.getByUserNumber(username);
 
         Optional<FriendRequest> optionalFriendRequest = friendRequestRepository.findById(requestId);
@@ -304,7 +305,7 @@ public class FriendRequestManager implements FriendRequestService {
 
     @Override
     @Transactional
-    public ResponseMessage cancelFriendRequest(String username, Long requestId) throws FriendRequestNotFoundException, UnauthorizedRequestException, StudentNotFoundException {
+    public ResponseMessage cancelFriendRequest(String username, UUID requestId) throws FriendRequestNotFoundException, UnauthorizedRequestException, StudentNotFoundException {
         Student student = studentRepository.getByUserNumber(username);
 
         Optional<FriendRequest> optionalFriendRequest = friendRequestRepository.findById(requestId);
@@ -332,13 +333,13 @@ public class FriendRequestManager implements FriendRequestService {
 
 
     @Override
-    public ResponseMessage acceptFriendRequestsBulk(String username, List<Long> requestIds) throws StudentNotFoundException {
+    public ResponseMessage acceptFriendRequestsBulk(String username, List<UUID> requestIds) throws StudentNotFoundException {
         Student student = studentRepository.getByUserNumber(username);
 
-        List<Long> acceptedRequests = new ArrayList<>();
+        List<UUID> acceptedRequests = new ArrayList<>();
         List<String> failedRequests = new ArrayList<>();
 
-        for (Long requestId : requestIds) {
+        for (UUID requestId : requestIds) {
             try {
                 FriendRequest friendRequest = friendRequestRepository.findById(requestId)
                         .orElseThrow(FriendRequestNotFoundException::new);
@@ -368,15 +369,15 @@ public class FriendRequestManager implements FriendRequestService {
 
     @Transactional
     @Override
-    public ResponseMessage rejectFriendRequestsBulk(String username, List<Long> requestIds) throws StudentNotFoundException {
+    public ResponseMessage rejectFriendRequestsBulk(String username, List<UUID> requestIds) throws StudentNotFoundException {
         Student receiver = studentRepository.getByUserNumber(username);
 
-        List<Long> validRequestIds = receiver.getReceiverRequest()
+        List<UUID> validRequestIds = receiver.getReceiverRequest()
                 .stream()
                 .map(FriendRequest::getId)
                 .toList();
 
-        List<Long> invalidRequestIds = requestIds.stream()
+        List<UUID> invalidRequestIds = requestIds.stream()
                 .filter(id -> !validRequestIds.contains(id))
                 .toList();
 

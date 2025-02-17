@@ -30,7 +30,7 @@ public class SecurityConfig {
 
         // Public erişim için yollar
         String[] publicPaths = {
-                "/auth/login/**",
+                "/v1/api/auth/login/**",
                 "/v1/api/admin/register",
                 "/v1/api/token/**",
                 "/v1/api/student/sign-up",

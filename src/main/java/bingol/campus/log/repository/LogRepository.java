@@ -9,8 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
-public interface LogRepository extends JpaRepository<Log, Long> {
+public interface LogRepository extends JpaRepository<Log, UUID> {
 
 
     // 1 AYDAN ESKİ LOG'LARI SİL

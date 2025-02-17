@@ -7,20 +7,21 @@ import lombok.NoArgsConstructor;
 
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder
 public class CommentDTO {
-    private long id;
+    private UUID id;
     private String username;
     private String profilePhoto;
 
-    private long postId;
+    private UUID postId;
 
     private String content;
-    private long storyId;
+    private UUID storyId;
 
     private LocalDateTime createdAt;
 }

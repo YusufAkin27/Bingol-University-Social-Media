@@ -26,6 +26,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1/api/likes") // "like" yerine çoğul "likes" kullanıldı (RESTful best practice)
@@ -35,25 +36,25 @@ public class LikeController {
 
     // Hikayeyi beğenme
     @PostMapping("/story/{storyId}")
-    public ResponseMessage likeStory(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long storyId) throws NotFollowingException, StoryNotActiveException, BlockingBetweenStudent, StoryNotFoundException, StudentNotFoundException, AlreadyLikedException, StudentProfilePrivateException {
+    public ResponseMessage likeStory(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID storyId) throws NotFollowingException, StoryNotActiveException, BlockingBetweenStudent, StoryNotFoundException, StudentNotFoundException, AlreadyLikedException, StudentProfilePrivateException {
         return likeService.likeStory(userDetails.getUsername(), storyId);
     }
 
     // Gönderiyi beğenme
     @PostMapping("/post/{postId}")
-    public ResponseMessage likePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException, AlreadyLikedException, StudentProfilePrivateException, PostAccessDeniedWithPrivateException, PostAccessDeniedWithBlockerException {
+    public ResponseMessage likePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID postId) throws PostNotIsActiveException, NotFollowingException, BlockingBetweenStudent, PostNotFoundException, StudentNotFoundException, AlreadyLikedException, StudentProfilePrivateException, PostAccessDeniedWithPrivateException, PostAccessDeniedWithBlockerException {
         return likeService.likePost(userDetails.getUsername(), postId);
     }
 
     // Hikaye beğenisini kaldırma (Unlike)
     @DeleteMapping("/story/{storyId}")
-    public ResponseMessage unlikeStory(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long storyId) throws StoryNotFoundLikeException, StoryNotFoundException, StudentNotFoundException {
+    public ResponseMessage unlikeStory(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID storyId) throws StoryNotFoundLikeException, StoryNotFoundException, StudentNotFoundException {
         return likeService.unlikeStory(userDetails.getUsername(), storyId);
     }
 
     // Gönderi beğenisini kaldırma (Unlike)
     @DeleteMapping("/post/{postId}")
-    public ResponseMessage unlikePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) throws PostNotFoundException, StudentNotFoundException, PostNotFoundLikeException {
+    public ResponseMessage unlikePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID postId) throws PostNotFoundException, StudentNotFoundException, PostNotFoundLikeException {
         return likeService.unlikePost(userDetails.getUsername(), postId);
     }
     //  beğendiği hikayeleri listele
@@ -69,18 +70,18 @@ public class LikeController {
 
     // Belirli bir tarihten sonra gönderiye yapılan beğenileri getir
     @GetMapping("/post/{postId}/likes-after/{dateTime}")
-    public DataResponseMessage<List<PostDTO>> getPostLikesAfter(@PathVariable Long postId, @PathVariable String dateTime) throws PostNotFoundException {
+    public DataResponseMessage<List<PostDTO>> getPostLikesAfter(@PathVariable UUID postId, @PathVariable String dateTime) throws PostNotFoundException {
         return likeService.getPostLikesAfter(postId, dateTime);
     }
     // Belirtilen hikayede belirli bir kullanıcının beğenisini arama
     @GetMapping("/story/{storyId}/search/{username}")
-    public DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long storyId, @PathVariable String username) throws NotFollowingException, StoryNotFoundException, StudentNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
+    public DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(@AuthenticationPrincipal UserDetails userDetails,@PathVariable UUID storyId, @PathVariable String username) throws NotFollowingException, StoryNotFoundException, StudentNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
         return likeService.searchUserInStoryLikes(userDetails.getUsername(),storyId, username);
     }
 
     // Belirtilen gönderide belirli bir kullanıcının beğenisini arama
     @GetMapping("/post/{postId}/search/{username}")
-    public DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(@AuthenticationPrincipal UserDetails userDetails,@PathVariable Long postId, @PathVariable String username) throws NotFollowingException, PostNotFoundException, StudentNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
+    public DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(@AuthenticationPrincipal UserDetails userDetails,@PathVariable UUID postId, @PathVariable String username) throws NotFollowingException, PostNotFoundException, StudentNotFoundException, BlockingBetweenStudent, StudentProfilePrivateException {
         return likeService.searchUserInPostLikes(userDetails.getUsername(),postId, username);
     }
 

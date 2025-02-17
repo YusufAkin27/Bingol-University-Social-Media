@@ -42,6 +42,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -57,12 +58,12 @@ public class LikeServiceManager implements LikeService {
 
     @Override
     @Transactional
-    public ResponseMessage likeStory(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException {
+    public ResponseMessage likeStory(String username, UUID storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username);
 
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
 
-        if (!story.isActive()) {
+        if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
 
@@ -110,7 +111,7 @@ public class LikeServiceManager implements LikeService {
     }
 
     @Override
-    public ResponseMessage likePost(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException {
+    public ResponseMessage likePost(String username, UUID postId) throws StudentNotFoundException, PostNotFoundException, PostNotIsActiveException, BlockingBetweenStudent, NotFollowingException, AlreadyLikedException, StudentProfilePrivateException {
         Student student = studentRepository.getByUserNumber(username);
 
         Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
@@ -161,7 +162,7 @@ public class LikeServiceManager implements LikeService {
 
     @Override
     @Transactional
-    public ResponseMessage unlikeStory(String username, Long storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotFoundLikeException {
+    public ResponseMessage unlikeStory(String username, UUID storyId) throws StoryNotFoundException, StudentNotFoundException, StoryNotFoundLikeException {
         // Kullanıcıyı (student) bul
         Student student = studentRepository.getByUserNumber(username);
 
@@ -187,7 +188,7 @@ public class LikeServiceManager implements LikeService {
 
     @Override
     @Transactional
-    public ResponseMessage unlikePost(String username, Long postId) throws StudentNotFoundException, PostNotFoundException, PostNotFoundLikeException {
+    public ResponseMessage unlikePost(String username, UUID postId) throws StudentNotFoundException, PostNotFoundException, PostNotFoundLikeException {
         // Kullanıcıyı (student) bul
         Student student = studentRepository.getByUserNumber(username);
 
@@ -259,7 +260,7 @@ public class LikeServiceManager implements LikeService {
     }
 
     @Override
-    public DataResponseMessage<List<PostDTO>> getPostLikesAfter(Long postId, String dateTime) throws PostNotFoundException, DateTimeParseException {
+    public DataResponseMessage<List<PostDTO>> getPostLikesAfter(UUID postId, String dateTime) throws PostNotFoundException, DateTimeParseException {
         // Gönderiyi (post) bul
         Post post = postRepository.findById(postId)
                 .orElseThrow(PostNotFoundException::new);
@@ -291,7 +292,7 @@ public class LikeServiceManager implements LikeService {
     }
 
     @Override
-    public DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(String username, Long postId, String targetUsername)
+    public DataResponseMessage<SearchAccountDTO> searchUserInPostLikes(String username, UUID postId, String targetUsername)
             throws PostNotFoundException, StudentNotFoundException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
 
         // Gönderiyi bul
@@ -322,7 +323,7 @@ public class LikeServiceManager implements LikeService {
     }
 
     @Override
-    public DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(String username, Long storyId, String targetUsername)
+    public DataResponseMessage<SearchAccountDTO> searchUserInStoryLikes(String username, UUID storyId, String targetUsername)
             throws StudentNotFoundException, StoryNotFoundException, NotFollowingException, BlockingBetweenStudent, StudentProfilePrivateException {
 
         // Hikayeyi bul

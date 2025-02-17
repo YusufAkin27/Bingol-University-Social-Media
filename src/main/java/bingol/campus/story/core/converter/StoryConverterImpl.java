@@ -36,14 +36,14 @@ public class StoryConverterImpl implements StoryConverter {
         // Hikaye detaylarını oluştur
         StoryDetails storyDetails = StoryDetails.builder()
                 .id(story.getId())
-                .username(story.getStudent().getUsername()) // Hikayeyi paylaşan öğrencinin adı
-                .photoUrl(story.getPhoto()) // Fotoğraf URL'si
-                .createdAt(story.getCreatedAt()) // Oluşturulma tarihi
-                .expiresAt(story.getExpiresAt()) // Sonlanma tarihi
-                .isActive(story.isActive()) // Hikayenin aktiflik durumu
-                .likeCount(story.getLikes().size()) // Beğeni sayısı
+                .username(story.getStudent().getUsername())
+                .photoUrl(story.getPhoto())
+                .createdAt(story.getCreatedAt())
+                .expiresAt(story.getExpiresAt())
+                .isActive(story.getIsActive())
+                .likeCount(story.getLikes().size())
                 .viewing(story.getViewers().stream()
-                        .map(storyViewer -> studentConverter.toSearchAccountDTO(storyViewer.getStudent())) // Görüntüleyen öğrenciler
+                        .map(storyViewer -> studentConverter.toSearchAccountDTO(storyViewer.getStudent()))
                         .collect(Collectors.toList()))
                 .likes(story.getLikes().stream().filter(like -> like.getStudent().getIsActive()).map(likeConverter::toDetails).toList())
 

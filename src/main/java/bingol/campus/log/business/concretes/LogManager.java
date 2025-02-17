@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,7 +67,7 @@ public class LogManager implements LogService {
 
     @Override
     @Transactional
-    public ResponseMessage deleteLog(String username, Long logId) throws StudentNotFoundException, LogNotFoundException {
+    public ResponseMessage deleteLog(String username, UUID logId) throws StudentNotFoundException, LogNotFoundException {
         Student student = studentRepository.getByUserNumber(username);
         Log log = getActiveLogs(student).stream().filter(l -> l.getId().equals(logId)).findFirst().orElseThrow(LogNotFoundException::new);
         logRepository.delete(log);
