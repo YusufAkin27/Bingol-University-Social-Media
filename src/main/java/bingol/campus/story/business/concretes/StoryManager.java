@@ -39,6 +39,7 @@ import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -279,12 +280,33 @@ public class StoryManager implements StoryService {
         Page<Story> storiesPage = storyRepository.findByStudentAndIsActive(student, true, pageable);
 
         List<StoryDetails> storyDetails = storiesPage.getContent().stream()
+                .filter(Story::getIsActive)
                 .map(story -> storyConverter.toDetails(story, pageable))
                 .collect(Collectors.toList());
 
         return new DataResponseMessage<>("Aktif hikayeler başarıyla getirildi.", true, storyDetails);
     }
 
+    @Transactional
+    public void archiveExpiredStories() {
+        List<Story> expiredStories = storyRepository.findExpiredStories();
+
+        if (expiredStories.isEmpty()) return; // Hiç süresi dolmuş hikaye yoksa işlem yapma
+
+        for (Story story : expiredStories) {
+            Student owner = story.getStudent();
+            owner.getArchivedStories().add(story); // Arşive ekle
+            story.setActive(false);
+        }
+
+        // Tüm değişiklikleri tek seferde kaydet
+        storyRepository.saveAll(expiredStories);
+        studentRepository.saveAll(expiredStories.stream().map(Story::getStudent).distinct().toList());
+    }
+    @Scheduled(cron = "0 0 * * * ?") // Her saat başında çalışır
+    public void scheduledArchiveExpiredStories() {
+        archiveExpiredStories();
+    }
 
     @Override
     @Transactional
@@ -368,20 +390,17 @@ public class StoryManager implements StoryService {
 
     @Override
     public DataResponseMessage<List<StoryDTO>> getPopularStories(String username) throws StudentNotFoundException {
-        // Tüm aktif ve özel olmayan (isPrivate=false) hikayeleri getir
         List<Story> activeStories = storyRepository.findAll().stream()
                 .filter(story -> story.getIsActive() && !story.getStudent().isPrivate())
                 .toList();
 
-        // Hikayelere puan hesaplamayı zaten başka bir yerde yapıyorsunuz, bu yüzden sıralama yapalım
         List<Story> sortedStories = activeStories.stream()
-                .sorted(Comparator.comparingLong(Story::getScore).reversed()) // Skora göre sıralama, long türü için doğru comparator
-                .limit(3) // En yüksek 3 hikaye
+                .sorted(Comparator.comparingLong(Story::getScore).reversed())
+                .limit(3)
                 .toList();
 
-        // DTO formatına çevir
         List<StoryDTO> popularStories = sortedStories.stream()
-                .map(storyConverter::toDto) // StoryConverter ile DTO dönüşümü
+                .map(storyConverter::toDto)
                 .collect(Collectors.toList());
 
         return new DataResponseMessage<>("Popüler hikayeler listelendi", true, popularStories);
@@ -391,36 +410,28 @@ public class StoryManager implements StoryService {
     @Override
     public DataResponseMessage<List<StoryDTO>> getUserActiveStories(String username, Long userId)
             throws StudentNotFoundException, BlockingBetweenStudent, NotFollowingException {
-        // Öğrenci (student) bilgisi alınıyor
         Student student = studentRepository.getByUserNumber(username);
-        // Takip edilecek öğrenci (student1) bilgisi alınıyor
         Student student1 = studentRepository.findById(userId).orElseThrow(StudentNotFoundException::new);
 
-        // Engellemeleri kontrol edelim: Eğer student1, student'i engellemişse veya student, student1'i engellemişse
         boolean isBlockedByStudent1 = student1.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student));  // student1 tarafından engellenmiş mi?
+                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student));
         boolean isBlockedByStudent = student.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student1));  // student tarafından engellenmiş mi?
+                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student1));
 
         if (isBlockedByStudent1 || isBlockedByStudent) {
             throw new BlockingBetweenStudent();
         }
 
-        // Kullanıcının (student) student1'i takip etmesi durumu kontrol ediliyor
         boolean isFollowing = student.getFollowing().stream()
                 .anyMatch(followRelation -> followRelation.getFollower().equals(student1));  // student1 takip ediliyor mu?
 
-        // Eğer student1'in profili gizli değilse veya student, student1'i takip ediyorsa hikayeleri görebilir
         if (!student1.isPrivate() || isFollowing) {
-            // student1'in aktif hikayelerini al
             List<Story> stories = student1.getStories().stream().filter(Story::getIsActive).toList();
 
-            // StoryDTO'ya dönüştür
             List<StoryDTO> storyDTOS = stories.stream().map(storyConverter::toDto).collect(Collectors.toList());
 
             return new DataResponseMessage<>("Hikayeler başarıyla listelendi", true, storyDTOS);
         } else {
-            // Kullanıcı profil gizli ve takip etmiyor, erişim reddediliyor
             throw new NotFollowingException();
         }
     }
@@ -430,13 +441,11 @@ public class StoryManager implements StoryService {
     public DataResponseMessage<List<CommentDetailsDTO>> getStoryComments(String username, UUID storyId) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
         Student student = studentRepository.getByUserNumber(username);
 
-        // Kullanıcının hikayelerinden ilgili hikayeyi bul
         Story story = student.getStories().stream()
                 .filter(s -> s.getId().equals(storyId))
                 .findFirst()
                 .orElseThrow(OwnerStoryException::new);
 
-        // Eğer hikaye aktif değilse hata fırlat
         if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
@@ -450,49 +459,41 @@ public class StoryManager implements StoryService {
     @Transactional
     public DataResponseMessage<StoryDTO> viewStory(String username, UUID storyId)
             throws StoryNotFoundException, StoryNotActiveException, StudentNotFoundException, NotFollowingException, BlockingBetweenStudent {
-        // Öğrenci bilgisi alınıyor
         Student student = studentRepository.getByUserNumber(username);
 
-        // Hikaye bilgisi alınıyor
         Story story = storyRepository.findById(storyId).orElseThrow(StoryNotFoundException::new);
 
-        // Hikayenin aktif olup olmadığını kontrol et
         if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }
 
-        // Hikayeyi paylaştığı öğrenci (student1) bilgisi
         Student student1 = story.getStudent();
 
-        // Engellemeleri kontrol et (student1 tarafından engellenmiş mi ve vice versa)
         boolean isBlockedByStudent1 = student1.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student));  // student1 tarafından engellenmiş mi?
+                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student));
         boolean isBlockedByStudent = student.getBlocked().stream()
-                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student1));  // student tarafından engellenmiş mi?
+                .anyMatch(blockRelation -> blockRelation.getBlocker().equals(student1));
 
         if (isBlockedByStudent1 || isBlockedByStudent) {
-            throw new BlockingBetweenStudent();  // Eğer engellenmişse, engellenmiş hatası fırlatılır
+            throw new BlockingBetweenStudent();
         }
 
-        // Takip durumu kontrolü
         boolean isFollowing = student.getFollowing().stream()
-                .anyMatch(followRelation -> followRelation.getFollower().equals(student1));  // student1 takip ediliyor mu?
+                .anyMatch(followRelation -> followRelation.getFollower().equals(student1));
 
-        if (student1.isPrivate() && !isFollowing) {  // Profil gizli ve takip edilmiyorsa, erişim reddedilir
+        if (student1.isPrivate() && !isFollowing) {
             throw new NotFollowingException();
         }
 
-        // Hikayeyi daha önce görüntülemiş mi kontrol et
         boolean hasViewedBefore = story.getViewers().stream()
-                .anyMatch(storyViewer -> storyViewer.getStudent().equals(student));  // Aynı öğrenci daha önce görüntüledi mi?
+                .anyMatch(storyViewer -> storyViewer.getStudent().equals(student));
 
         if (!hasViewedBefore) {
-            // Hikayeye yeni bir görüntüleyen ekle
             StoryViewer storyViewer = new StoryViewer();
             storyViewer.setViewedAt(LocalDateTime.now());
             storyViewer.setStudent(student);
             storyViewer.setStory(story);
-            storyViewerRepository.save(storyViewer);  // Yeni görüntüleme bilgisi kaydediliyor
+            storyViewerRepository.save(storyViewer);
         }
 
         StoryDTO storyDTO = storyConverter.toDto(story);
@@ -504,13 +505,11 @@ public class StoryManager implements StoryService {
     public DataResponseMessage<List<LikeDetailsDTO>> getLike(String username, UUID storyId) throws StudentNotFoundException, OwnerStoryException, StoryNotActiveException {
         Student student = studentRepository.getByUserNumber(username);
 
-        // Kullanıcının hikayelerinden ilgili hikayeyi bul
         Story story = student.getStories().stream()
                 .filter(s -> s.getId().equals(storyId))
                 .findFirst()
                 .orElseThrow(OwnerStoryException::new);
 
-        // Eğer hikaye aktif değilse hata fırlat
         if (!story.getIsActive()) {
             throw new StoryNotActiveException();
         }

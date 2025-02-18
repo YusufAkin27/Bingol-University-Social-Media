@@ -213,19 +213,26 @@ public class StudentManager implements StudentService {
 
         Set<Student> suggestedConnections = new HashSet<>();
 
+
         for (Student followedStudent : following) {
             followedStudent.getFollowing().forEach(followRelation -> {
                 Student followedFriend = followRelation.getFollowed();
 
+                // Engellenen veya engelleyen kullanıcıları filtrele
+                boolean isBlockedByUser = blocked.contains(followedFriend);
+                boolean hasBlockedUser = followedFriend.getBlocked().stream()
+                        .anyMatch(blockRelation -> blockRelation.getBlocked().equals(student));
+
                 if (!followedFriend.getUsername().equals(username) &&
-                        !blocked.contains(followedFriend) &&
-                        !followedFriend.getBlocked().contains(student) &&
+                        !isBlockedByUser && // Kullanıcı, önerilen kişiyi engellememiş olmalı
+                        !hasBlockedUser && // Önerilen kişi de kullanıcıyı engellememiş olmalı
                         !following.contains(followedFriend) &&
                         !followers.contains(followedFriend)) {
                     suggestedConnections.add(followedFriend);
                 }
             });
         }
+
 
         Map<String, Integer> commonFriendsCount = new HashMap<>();
 
@@ -656,36 +663,24 @@ public class StudentManager implements StudentService {
     public DataResponseMessage search(String username, String query, int page) throws StudentNotFoundException {
         Student student = studentRepository.getByUserNumber(username);
 
-        Set<Long> excludedUserIds = new HashSet<>();
-        excludedUserIds.addAll(student.getBlocked().stream()
-                .map(blockRelation -> blockRelation.getBlocked().getId())
-                .collect(Collectors.toSet()));
-        excludedUserIds.addAll(student.getBlocked().stream()
-                .map(blockRelation -> blockRelation.getBlocker().getId())
-                .collect(Collectors.toSet()));
-        excludedUserIds.add(student.getId());
+        // 1. Önce, kullanıcıyı engelleyen ve kullanıcının engellediği kişileri filtrele
+        Set<Long> excludedUserIds = studentRepository.getBlockedUserIds(student.getId());
 
         int pageSize = 10;
         Pageable pageable = PageRequest.of(page, pageSize);
 
+        // 2. Veritabanında engellenmiş kullanıcıları hariç tutarak arama yap
         List<Student> matchingStudents = studentRepository.searchStudents(query, excludedUserIds, pageable);
 
-        Map<Student, Integer> studentCommonFollowersCount = new HashMap<>();
-        for (Student matchedStudent : matchingStudents) {
-            int commonFollowersCount = calculateCommonFollowers(student, matchedStudent);
-            studentCommonFollowersCount.put(matchedStudent, commonFollowersCount);
-        }
-
-        List<Student> sortedStudents = matchingStudents.stream()
-                .sorted((s1, s2) -> Integer.compare(studentCommonFollowersCount.get(s2), studentCommonFollowersCount.get(s1)))  // Azalan sıralama
-                .toList();
-
-        List<SearchAccountDTO> searchAccountDTOS = sortedStudents.stream()
+        // 3. İlk 10 kullanıcıyı aldıktan sonra, student'i engelleyenleri çıkar
+        List<SearchAccountDTO> searchAccountDTOS = matchingStudents.stream()
+                .filter(matchedStudent -> !studentRepository.isBlockedBy(matchedStudent.getId(), student.getId())) // matchedStudent, student'i engellemiş mi?
                 .map(studentConverter::toSearchAccountDTO)
                 .collect(Collectors.toList());
 
         return new DataResponseMessage<>("Arama sonuçları", true, searchAccountDTOS);
     }
+
 
     private int calculateCommonFollowers(Student student1, Student student2) {
         Set<String> student1Followers = student1.getFollowers().stream()

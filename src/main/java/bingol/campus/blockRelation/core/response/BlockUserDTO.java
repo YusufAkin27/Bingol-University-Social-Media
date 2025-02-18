@@ -1,5 +1,6 @@
 package bingol.campus.blockRelation.core.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class BlockUserDTO {
     private String username;
     private String firstName;
     private String lastName;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate blockDate;
     private String profilePhoto;
 }

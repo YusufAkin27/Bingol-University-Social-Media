@@ -5,6 +5,7 @@ import bingol.campus.student.entity.Student;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,7 +17,8 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
 
     List<Story> findByStudent(Student student1);
 
-    Page<Story> findByStudentAndIsActive(Student student, boolean b, Pageable pageable);
-
     long countByCreatedAt(LocalDateTime today);
+    @Query("SELECT s FROM Story s WHERE s.expiresAt <= CURRENT_TIMESTAMP AND s.isActive = true")
+    List<Story> findExpiredStories();
+    Page<Story> findByStudentAndIsActive(Student student, boolean b, Pageable pageable);
 }

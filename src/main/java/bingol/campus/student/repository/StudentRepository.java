@@ -82,5 +82,12 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findByRoles(Role role);
 
 
+    @Query("SELECT br.blocked.id FROM BlockRelation br WHERE br.blocker.id = :studentId " +
+            "UNION " +
+            "SELECT br.blocker.id FROM BlockRelation br WHERE br.blocked.id = :studentId")
+    Set<Long> getBlockedUserIds(@Param("studentId") Long studentId);
+
+    @Query("SELECT COUNT(br) > 0 FROM BlockRelation br WHERE br.blocker.id = :blockerId AND br.blocked.id = :blockedId")
+    boolean isBlockedBy(@Param("blockerId") Long blockerId, @Param("blockedId") Long blockedId);
 
 }

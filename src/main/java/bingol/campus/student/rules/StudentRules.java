@@ -31,7 +31,7 @@ public class StudentRules {
 
     public void validateUsername(String username) throws DuplicateUsernameException, InvalidUsernameException {
         // Kullanıcı adı null ise veya 7 karakterden kısa ise, ya da belirtilen desenle eşleşmiyorsa InvalidUsernameException fırlat.
-        if (username == null || username.length() < 7 || !username.matches("^[a-zA-Z0-9._-]+$")) {
+        if (username == null  || !username.matches("^[a-zA-ZçğıöşüÇĞİÖŞÜ0-9._-]{5,20}$")) {
             throw new InvalidUsernameException();
         }
 

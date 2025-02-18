@@ -136,6 +136,7 @@ public class BlockRelationManager implements BlockRelationService {
 
         // Takip ve arkadaşlık ilişkilerini temizle
         cleanupRelations(blocker, blocked);
+        cleanupRelations(blocked,blocker);
 
         return new ResponseMessage("Engelleme başarılı ve ilişkiler temizlendi", true);
     }

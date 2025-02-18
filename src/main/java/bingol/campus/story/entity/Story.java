@@ -56,11 +56,9 @@ public class Story {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "story")
     private List<StoryViewer> viewers = new ArrayList<>(); // Hikayeyi görüntüleyen kullanıcılar
 
+
     public boolean getIsActive() {
-        if (this.expiresAt.isAfter(LocalDateTime.now())) {
-            this.isActive = false;
-            return false;
-        }
-        return true;
+        return expiresAt == null || expiresAt.isAfter(LocalDateTime.now());
     }
+
 }
